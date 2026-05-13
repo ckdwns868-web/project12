@@ -309,9 +309,10 @@ tbody tr:hover td{background:#f8fafc}
     </div>
     <div class="form-group">
       <label class="form-label">비밀번호</label>
-      <div class="input-icon">
+      <div class="input-icon" style="position:relative">
         <i class="fa-solid fa-lock"></i>
-        <input class="form-input" id="login-pw" type="password" placeholder="비밀번호 입력" autocomplete="off" onkeydown="if(event.key==='Enter')login()">
+        <input class="form-input" id="login-pw" type="text" placeholder="비밀번호 입력" autocomplete="off" onkeydown="if(event.key==='Enter')login()" style="-webkit-text-security:disc;text-security:disc">
+        <span onclick="togglePw()" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);cursor:pointer;color:#94a3b8;font-size:14px" id="pw-eye"><i class="fa-regular fa-eye"></i></span>
       </div>
     </div>
     <div class="login-error" id="login-error"><i class="fa-solid fa-circle-xmark"></i><span id="login-error-msg">아이디 또는 비밀번호가 올바르지 않습니다.</span></div>
@@ -781,6 +782,20 @@ function logout(){
   document.getElementById('login-id').value = '';
   document.getElementById('login-pw').value = '';
   hideLoginError();
+}
+
+function togglePw(){
+  const el = document.getElementById('login-pw');
+  const eye = document.getElementById('pw-eye');
+  if(el.style.webkitTextSecurity === 'disc' || el.style.webkitTextSecurity === ''){
+    el.style.webkitTextSecurity = 'none';
+    el.style.textSecurity = 'none';
+    eye.innerHTML = '<i class="fa-regular fa-eye-slash"></i>';
+  } else {
+    el.style.webkitTextSecurity = 'disc';
+    el.style.textSecurity = 'disc';
+    eye.innerHTML = '<i class="fa-regular fa-eye"></i>';
+  }
 }
 
 function showLoginError(msg){

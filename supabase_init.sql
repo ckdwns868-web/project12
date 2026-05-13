@@ -1,0 +1,60 @@
+-- =====================================================
+-- 부품 불량 이력 관리 시스템 - Supabase 초기화 SQL
+-- Supabase SQL Editor에서 실행하세요
+-- =====================================================
+
+-- 1. 테이블 생성
+-- =====================================================
+
+CREATE TABLE IF NOT EXISTS public.defect_type_codes (
+  id        SERIAL PRIMARY KEY,
+  code      VARCHAR(10)  UNIQUE NOT NULL,
+  name      VARCHAR(100) NOT NULL,
+  category  VARCHAR(50),
+  is_active BOOLEAN DEFAULT true,
+  use_count INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.parts (
+  id             SERIAL PRIMARY KEY,
+  part_no        VARCHAR(50)  UNIQUE NOT NULL,
+  part_name      VARCHAR(200) NOT NULL,
+  supplier       VARCHAR(100),
+  category       VARCHAR(100),
+  grade          VARCHAR(2) DEFAULT 'A',
+  last_incoming  DATE,
+  created_at     TIMESTAMPTZ DEFAULT NOW(),
+  updated_at     TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.inspections (
+  id            SERIAL PRIMARY KEY,
+  part_id       INTEGER REFERENCES public.parts(id) ON DELETE CASCADE,
+  lot_no        VARCHAR(50),
+  incoming_date DATE,
+  incoming_qty  INTEGER DEFAULT 0,
+  inspect_qty   INTEGER DEFAULT 0,
+  defect_qty    INTEGER DEFAULT 0,
+  defect_rate   NUMERIC(5,2) DEFAULT 0,
+  result        VARCHAR(20),
+  inspector     VARCHAR(100),
+  notes         TEXT,
+  action        VARCHAR(50),
+  created_at    TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.defect_details (
+  id               SERIAL PRIMARY KEY,
+  inspection_id    INTEGER REFERENCES public.inspections(id) ON DELETE CASCADE,
+  defect_type_name VARCHAR(100),
+  defect_count     INTEGER DEFAULT 1,
+  created_at       TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 2. RLS 비활성화 (내부 시스템용)
+-- =====================================================
+ALTER TABLE public.defect_type_codes DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.parts             DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.inspections       DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.defect_details    DISABLE ROW LEVEL SECURITY;

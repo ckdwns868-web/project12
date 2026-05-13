@@ -739,6 +739,15 @@ let currentUser = null;
   document.getElementById('rp-end').value   = ymd;
 })();
 
+// ── 계정 목록 (내장) ─────────────────────────────────────────────────
+const USERS = [
+  { id:1, name:'김민수', role:'입고 검사자',   username:'mskim',  password:'1234'      },
+  { id:2, name:'이영희', role:'품질 관리자',   username:'yhlee',  password:'1234'      },
+  { id:3, name:'박정훈', role:'입고 검사자',   username:'jhpark', password:'1234'      },
+  { id:4, name:'최수진', role:'구매/조달',     username:'sjchoi', password:'1234'      },
+  { id:5, name:'관리자', role:'시스템 관리자', username:'admin',  password:'admin1234' },
+];
+
 // ── 인증 ──────────────────────────────────────────────────────────────
 async function login(){
   const username = document.getElementById('login-id').value.trim();
@@ -747,18 +756,19 @@ async function login(){
   const btn = document.getElementById('login-btn');
   btn.disabled = true;
   btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 확인 중...';
-  try {
-    const { data, error } = await sb.from('users')
-      .select('*').eq('username', username).eq('password', password).eq('is_active', true).single();
-    if(error || !data){ showLoginError('아이디 또는 비밀번호가 올바르지 않습니다.'); }
-    else {
-      currentUser = { id: data.id, name: data.name, role: data.role, username: data.username };
-      localStorage.setItem('qms_user', JSON.stringify(currentUser));
-      document.getElementById('login-screen').classList.add('hidden');
-      updateSidebarUser();
-      await startApp();
-    }
-  } catch(e){ showLoginError('서버 오류가 발생했습니다.'); }
+
+  const user = USERS.find(u => u.username === username && u.password === password);
+  if(!user){
+    showLoginError('아이디 또는 비밀번호가 올바르지 않습니다.');
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> 로그인';
+    return;
+  }
+  currentUser = { id: user.id, name: user.name, role: user.role, username: user.username };
+  localStorage.setItem('qms_user', JSON.stringify(currentUser));
+  document.getElementById('login-screen').classList.add('hidden');
+  updateSidebarUser();
+  await startApp();
   btn.disabled = false;
   btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> 로그인';
 }

@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>부품별 불량 유형 데이터 누적 시스템 - 구체화된 요구사항</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
+      font-size: 14px;
+      color: #1a1a2e;
+      background: #f4f6fb;
+      line-height: 1.7;
+    }
+
+    /* ── 사이드바 ── */
+    .sidebar {
+      position: fixed;
+      top: 0; left: 0;
+      width: 240px; height: 100vh;
+      background: #1a1a2e;
+      overflow-y: auto;
+      padding: 24px 0;
+      z-index: 100;
+    }
+    .sidebar-logo {
+      padding: 0 20px 20px;
+      border-bottom: 1px solid #2d2d4e;
+      color: #7c83fd;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+    .sidebar-logo span { display: block; color: #fff; font-size: 15px; margin-top: 4px; }
+    .sidebar nav { padding: 16px 0; }
+    .nav-section {
+      padding: 8px 20px 4px;
+      font-size: 10px;
+      font-weight: 700;
+      color: #555580;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .nav-item {
+      display: block;
+      padding: 8px 20px;
+      color: #9999bb;
+      text-decoration: none;
+      font-size: 13px;
+      transition: all 0.2s;
+      border-left: 3px solid transparent;
+    }
+    .nav-item:hover, .nav-item.active {
+      color: #fff;
+      background: rgba(124,131,253,0.1);
+      border-left-color: #7c83fd;
+    }
+    .nav-sub {
+      padding: 5px 20px 5px 32px;
+      color: #777799;
+      font-size: 12px;
+      display: block;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .nav-sub:hover { color: #bbb; }
+
+    /* ── 메인 콘텐츠 ── */
+    .main {
+      margin-left: 240px;
+      padding: 40px 48px;
+      max-width: 1100px;
+    }
+
+    /* ── 헤더 ── */
+    .doc-header {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%);
+      color: #fff;
+      border-radius: 12px;
+      padding: 40px 48px;
+      margin-bottom: 40px;
+    }
+    .doc-header .badge {
+      display: inline-block;
+      background: rgba(124,131,253,0.25);
+      color: #a5aaff;
+      border: 1px solid rgba(124,131,253,0.4);
+      border-radius: 20px;
+      padding: 4px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+    .doc-header h1 { font-size: 26px; font-weight: 700; margin-bottom: 8px; }
+    .doc-header .subtitle { color: #9999cc; font-size: 14px; margin-bottom: 24px; }
+    .doc-meta {
+      display: flex; gap: 32px; flex-wrap: wrap;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      padding-top: 20px; margin-top: 4px;
+    }
+    .doc-meta-item { font-size: 13px; }
+    .doc-meta-item .label { color: #7c83fd; font-size: 11px; font-weight: 600; margin-bottom: 2px; }
+    .doc-meta-item .value { color: #e0e0ff; }
+
+    /* ── 섹션 ── */
+    .section {
+      background: #fff;
+      border-radius: 10px;
+      margin-bottom: 28px;
+      border: 1px solid #e4e8f0;
+      overflow: hidden;
+    }
+    .section-header {
+      padding: 18px 28px;
+      background: #f8f9fd;
+      border-bottom: 1px solid #e4e8f0;
+      display: flex; align-items: center; gap: 12px;
+      cursor: pointer;
+    }
+    .section-num {
+      width: 28px; height: 28px;
+      background: #7c83fd;
+      color: #fff;
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700;
+      flex-shrink: 0;
+    }
+    .section-title { font-size: 16px; font-weight: 700; color: #1a1a2e; flex: 1; }
+    .section-body { padding: 28px; }
+
+    /* ── 서브섹션 ── */
+    .subsection { margin-bottom: 28px; }
+    .subsection:last-child { margin-bottom: 0; }
+    .subsection-title {
+      font-size: 14px; font-weight: 700;
+      color: #3a3a6e;
+      margin-bottom: 12px;
+      padding-bottom: 6px;
+      border-bottom: 2px solid #eef0ff;
+    }
+
+    /* ── 테이블 ── */
+    table {
+      width: 100%; border-collapse: collapse;
+      font-size: 13px; margin: 12px 0;
+    }
+    th {
+      background: #1a1a2e;
+      color: #c5c8ff;
+      padding: 10px 14px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 12px;
+    }
+    td { padding: 9px 14px; border-bottom: 1px solid #f0f2f8; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #fafbff; }
+    .td-center { text-align: center; }
+
+    /* ── 체크/엑스 ── */
+    .ok { color: #22c55e; font-weight: 700; }
+    .no { color: #e5e7eb; }
+
+    /* ── 코드 블록 ── */
+    .code-block {
+      background: #1a1a2e;
+      color: #c8ccff;
+      border-radius: 8px;
+      padding: 18px 20px;
+      font-family: 'Consolas', 'D2Coding', monospace;
+      font-size: 13px;
+      line-height: 1.8;
+      margin: 12px 0;
+      overflow-x: auto;
+    }
+    .code-block .comment { color: #555580; }
+    .code-block .key { color: #7c83fd; }
+    .code-block .val { color: #a5e3c8; }
+
+    /* ── 배지 / 태그 ── */
+    .tag {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .tag-green  { background: #dcfce7; color: #166534; }
+    .tag-yellow { background: #fef9c3; color: #854d0e; }
+    .tag-orange { background: #ffedd5; color: #9a3412; }
+    .tag-red    { background: #fee2e2; color: #991b1b; }
+    .tag-blue   { background: #dbeafe; color: #1e40af; }
+    .tag-purple { background: #ede9fe; color: #5b21b6; }
+
+    /* ── FR 카드 ── */
+    .fr-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 12px; margin: 12px 0;
+    }
+    .fr-card {
+      border: 1px solid #e4e8f0;
+      border-radius: 8px;
+      padding: 14px 16px;
+      background: #fafbff;
+    }
+    .fr-id { font-size: 11px; font-weight: 700; color: #7c83fd; margin-bottom: 4px; }
+    .fr-desc { font-size: 13px; color: #333; }
+
+    /* ── 플로우 다이어그램 ── */
+    .flow {
+      display: flex; flex-direction: column; align-items: flex-start;
+      gap: 0; margin: 12px 0;
+    }
+    .flow-step {
+      display: flex; align-items: flex-start; gap: 12px;
+      position: relative;
+    }
+    .flow-step::before {
+      content: '';
+      position: absolute; left: 19px; top: 38px;
+      width: 2px; height: calc(100% - 8px);
+      background: #e0e4f8;
+    }
+    .flow-step:last-child::before { display: none; }
+    .flow-icon {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: #7c83fd; color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; flex-shrink: 0;
+      box-shadow: 0 2px 8px rgba(124,131,253,0.3);
+    }
+    .flow-content { padding: 8px 0 20px; }
+    .flow-label { font-weight: 700; font-size: 14px; color: #1a1a2e; }
+    .flow-detail { font-size: 12px; color: #666; margin-top: 2px; }
+
+    /* ── 와이어프레임 ── */
+    .wireframe {
+      background: #f8f9fd;
+      border: 1px solid #d0d5e8;
+      border-radius: 8px;
+      padding: 20px;
+      font-family: 'Consolas', monospace;
+      font-size: 12px;
+      line-height: 1.8;
+      color: #334;
+      white-space: pre;
+      overflow-x: auto;
+    }
+
+    /* ── 알림 박스 ── */
+    .notice {
+      border-left: 4px solid #7c83fd;
+      background: #f0f1ff;
+      padding: 12px 16px;
+      border-radius: 0 6px 6px 0;
+      font-size: 13px;
+      color: #3a3a7a;
+      margin: 12px 0;
+    }
+
+    /* ── KPI 카드 ── */
+    .kpi-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 16px; margin: 12px 0;
+    }
+    .kpi-card {
+      border: 1px solid #e4e8f0;
+      border-radius: 10px;
+      padding: 18px 20px;
+      background: linear-gradient(135deg, #fafbff, #f0f1ff);
+    }
+    .kpi-label { font-size: 12px; color: #666; margin-bottom: 6px; }
+    .kpi-value { font-size: 22px; font-weight: 800; color: #7c83fd; }
+    .kpi-desc { font-size: 11px; color: #999; margin-top: 4px; }
+
+    /* ── Phase 카드 ── */
+    .phase-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 16px; margin: 12px 0;
+    }
+    @media (max-width: 700px) { .phase-grid { grid-template-columns: 1fr; } }
+    .phase-card {
+      border-radius: 10px; padding: 20px;
+      border: 1px solid #e4e8f0;
+    }
+    .phase-card.p1 { border-top: 4px solid #22c55e; }
+    .phase-card.p2 { border-top: 4px solid #f59e0b; }
+    .phase-card.p3 { border-top: 4px solid #7c83fd; }
+    .phase-num { font-size: 11px; font-weight: 700; color: #999; margin-bottom: 6px; }
+    .phase-name { font-size: 14px; font-weight: 700; margin-bottom: 12px; }
+    .phase-item { font-size: 12px; color: #444; padding: 3px 0; }
+    .phase-item::before { content: '▸ '; color: #aaa; }
+
+    /* ── 스크롤바 ── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #1a1a2e; }
+    ::-webkit-scrollbar-thumb { background: #3a3a6e; border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+<!-- 사이드바 -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    품질 관리 시스템<br>
+    <span>요구사항 명세서</span>
+  </div>
+  <nav>
+    <div class="nav-section">PRD</div>
+    <a href="#overview" class="nav-item">1. 개요</a>
+    <a href="#users" class="nav-item">2. 사용자</a>
+    <a href="#fr" class="nav-item">3. 핵심 기능 요구사항</a>
+    <a href="#nfr" class="nav-item">4. 비기능 요구사항</a>
+    <a href="#ux" class="nav-item">5. 화면 구성</a>
+    <a href="#data" class="nav-item">6. 데이터 모델</a>
+    <a href="#stack" class="nav-item">7. 기술 스택</a>
+    <a href="#roadmap" class="nav-item">8. 로드맵</a>
+    <a href="#kpi" class="nav-item">9. 성공 지표</a>
+
+    <div class="nav-section" style="margin-top:12px;">구체화된 요구사항</div>
+    <a href="#defect-code" class="nav-item">1. 불량 유형 코드</a>
+    <a href="#alert-logic" class="nav-item">2. 알림 로직 상세</a>
+    <a href="#lot-mgmt" class="nav-item">3. 차수 관리 규칙</a>
+    <a href="#auth" class="nav-item">4. 권한 매트릭스</a>
+    <a href="#report-format" class="nav-item">5. 보고서 출력 형식</a>
+    <a href="#notification" class="nav-item">6. 알림·에스컬레이션</a>
+    <a href="#migration" class="nav-item">7. 데이터 마이그레이션</a>
+    <a href="#integration" class="nav-item">8. 외부 시스템 연동</a>
+    <a href="#performance" class="nav-item">9. 성능·운영 요구사항</a>
+  </nav>
+</aside>
+
+<!-- 메인 -->
+<main class="main">
+
+  <!-- 문서 헤더 -->
+  <div class="doc-header">
+    <div class="badge">Product Requirements Document v1.0</div>
+    <h1>부품별 불량 유형 데이터 누적 시스템</h1>
+    <p class="subtitle">입고 검사 시 과거 불량 이력 실시간 참조 및 부품별 부적합 데이터 누적·관리</p>
+    <div class="doc-meta">
+      <div class="doc-meta-item">
+        <div class="label">PRD 작성일</div>
+        <div class="value">2026-04-30</div>
+      </div>
+      <div class="doc-meta-item">
+        <div class="label">구체화 요구사항 작성일</div>
+        <div class="value">2026-05-13</div>
+      </div>
+      <div class="doc-meta-item">
+        <div class="label">문서 버전</div>
+        <div class="value">v1.0</div>
+      </div>
+      <div class="doc-meta-item">
+        <div class="label">상태</div>
+        <div class="value"><span class="tag tag-yellow">검토 중</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════ PRD ═══════════════════════════ -->
+
+  <!-- 1. 개요 -->
+  <div class="section" id="overview">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <div class="section-title">개요 (Overview)</div>
+    </div>
+    <div class="section-body">
+      <div class="subsection">
+        <div class="subsection-title">1.1 제품 목적</div>
+        <p>부품 입고 검사 시 과거 불량 이력을 실시간으로 참조하여 검사자가 유의해야 할 불량 유형을 사전에 인지하고, 부품별 부적합 내용을 체계적으로 누적·관리하는 시스템</p>
+      </div>
+      <div class="subsection">
+        <div class="subsection-title">1.2 배경 및 문제 정의</div>
+        <ul style="padding-left:20px; color:#444;">
+          <li style="margin-bottom:6px;">현재 부품 입고 검사 시 과거 불량 이력 정보가 검사자에게 즉시 제공되지 않음</li>
+          <li style="margin-bottom:6px;">동일 부품에서 반복 발생하는 불량 유형을 사전에 인지하지 못해 검사 누락 발생</li>
+          <li style="margin-bottom:6px;">부적합 데이터가 분산 관리되어 부품별 품질 트렌드 파악이 어려움</li>
+          <li>차수별 입고 시 이전 차수의 불량 이력이 검사 기준에 반영되지 않음</li>
+        </ul>
+      </div>
+      <div class="subsection">
+        <div class="subsection-title">1.3 목표</div>
+        <ul style="padding-left:20px; color:#444;">
+          <li style="margin-bottom:6px;">부품별 불량 이력 데이터를 누적 저장하고 검색 가능한 구조로 관리</li>
+          <li style="margin-bottom:6px;">신규 입고 검사 시 해당 부품의 과거 불량 유형을 자동으로 알림</li>
+          <li style="margin-bottom:6px;">부품별 부적합 내용을 리포트 형태로 정리 및 출력</li>
+          <li>반복 불량 부품에 대한 관리 강화 체계 수립</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. 사용자 -->
+  <div class="section" id="users">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <div class="section-title">사용자 (Stakeholders & Users)</div>
+    </div>
+    <div class="section-body">
+      <table>
+        <thead><tr><th>역할</th><th>설명</th><th>주요 관심사</th></tr></thead>
+        <tbody>
+          <tr><td>입고 검사자</td><td>부품 수령 후 품질 검사 수행</td><td>과거 불량 유형 확인, 검사 포인트 안내</td></tr>
+          <tr><td>품질 관리자</td><td>불량 데이터 등록 및 분석</td><td>트렌드 파악, 리포트 생성</td></tr>
+          <tr><td>구매/조달 담당자</td><td>공급사 관리</td><td>공급사별 불량 현황 파악</td></tr>
+          <tr><td>시스템 관리자</td><td>부품 마스터 및 권한 관리</td><td>데이터 정합성, 사용자 관리</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 3. 핵심 기능 요구사항 -->
+  <div class="section" id="fr">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <div class="section-title">핵심 기능 요구사항 (Functional Requirements)</div>
+    </div>
+    <div class="section-body">
+      <div class="subsection">
+        <div class="subsection-title">3.1 부품 마스터 관리</div>
+        <div class="fr-grid">
+          <div class="fr-card"><div class="fr-id">FR-01</div><div class="fr-desc">부품번호, 부품명, 공급사, 분류 카테고리 등록 및 수정</div></div>
+          <div class="fr-card"><div class="fr-id">FR-02</div><div class="fr-desc">부품별 기준 검사 항목 템플릿 설정</div></div>
+          <div class="fr-card"><div class="fr-id">FR-03</div><div class="fr-desc">부품 검색 (부품번호, 부품명, 공급사, 카테고리 필터)</div></div>
+          <div class="fr-card"><div class="fr-id">FR-04</div><div class="fr-desc">부품 마스터 엑셀 일괄 업로드/다운로드</div></div>
+        </div>
+      </div>
+      <div class="subsection">
+        <div class="subsection-title">3.2 불량 데이터 입력 및 누적</div>
+        <div class="fr-grid">
+          <div class="fr-card"><div class="fr-id">FR-05</div><div class="fr-desc">검사 결과 등록: 입고 차수, 입고일, 수량, 검사 수량, 불량 수량 입력</div></div>
+          <div class="fr-card"><div class="fr-id">FR-06</div><div class="fr-desc">불량 유형 다중 선택 등록 (사전 정의 + 직접 입력)</div></div>
+          <div class="fr-card"><div class="fr-id">FR-07</div><div class="fr-desc">불량별 사진 첨부 (1건당 최대 10장)</div></div>
+          <div class="fr-card"><div class="fr-id">FR-08</div><div class="fr-desc">불량 상세 내용 텍스트 입력 (부적합 기술서 형식)</div></div>
+          <div class="fr-card"><div class="fr-id">FR-09</div><div class="fr-desc">조치 내용 등록: 전량 반품, 선별 후 사용, 특채, 폐기 등</div></div>
+          <div class="fr-card"><div class="fr-id">FR-10</div><div class="fr-desc">등록된 데이터 수정 및 이력 관리 (수정 전/후 보존)</div></div>
+        </div>
+      </div>
+      <div class="subsection">
+        <div class="subsection-title">3.3 입고 검사 시 불량 이력 알림 (핵심)</div>
+        <div class="notice">이 영역이 시스템의 핵심 기능입니다. 부품번호 입력/스캔 시 즉시 과거 불량 이력을 제공하여 검사자가 중점 검사 항목을 인지할 수 있도록 합니다.</div>
+        <div class="fr-grid" style="margin-top:12px;">
+          <div class="fr-card"><div class="fr-id">FR-11</div><div class="fr-desc">부품번호 입력/스캔 시 과거 불량 이력 팝업 또는 사이드패널 자동 표시</div></div>
+          <div class="fr-card"><div class="fr-id">FR-12</div><div class="fr-desc">불량 이력 표시: 최근 N차수 요약, 불량 유형별 빈도, 최근 발생일, 유의사항 문구</div></div>
+          <div class="fr-card"><div class="fr-id">FR-13</div><div class="fr-desc">불량 이력 없는 부품: "이력 없음 - 표준 검사 절차 적용" 표시</div></div>
+          <div class="fr-card"><div class="fr-id">FR-14</div><div class="fr-desc">반복 불량 임계값 설정 (예: 3차수 연속 불량 시 경고 등급 상향)</div></div>
+          <div class="fr-card"><div class="fr-id">FR-15</div><div class="fr-desc">유의 검사 항목 체크리스트 자동 생성 (과거 불량 유형 기반)</div></div>
+        </div>
+      </div>
+      <div class="subsection">
+        <div class="subsection-title">3.4 부품별 부적합 내용 정리</div>
+        <div class="fr-grid">
+          <div class="fr-card"><div class="fr-id">FR-16</div><div class="fr-desc">부품별 부적합 이력 전체 조회 (차수별 타임라인 뷰)</div></div>
+          <div class="fr-card"><div class="fr-id">FR-17</div><div class="fr-desc">불량 유형별 통계: 발생 건수, 불량률, 추이 그래프</div></div>
+          <div class="fr-card"><div class="fr-id">FR-18</div><div class="fr-desc">부적합 보고서 생성 및 PDF/엑셀 출력</div></div>
+          <div class="fr-card"><div class="fr-id">FR-19</div><div class="fr-desc">공급사별 불량 현황 집계 뷰</div></div>
+          <div class="fr-card"><div class="fr-id">FR-20</div><div class="fr-desc">부품 등급 자동 산정: 불량률 기준 A/B/C/D 등급 표시</div></div>
+        </div>
+      </div>
+      <div class="subsection">
+        <div class="subsection-title">3.5 검색 및 필터</div>
+        <div class="fr-grid">
+          <div class="fr-card"><div class="fr-id">FR-21</div><div class="fr-desc">전체 불량 데이터 검색: 기간, 부품번호, 공급사, 불량 유형, 조치 결과 복합 필터</div></div>
+          <div class="fr-card"><div class="fr-id">FR-22</div><div class="fr-desc">동일 불량 유형이 발생한 부품 그룹 조회</div></div>
+          <div class="fr-card"><div class="fr-id">FR-23</div><div class="fr-desc">특정 기간 내 불량 다발 부품 TOP N 조회</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. 비기능 요구사항 -->
+  <div class="section" id="nfr">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <div class="section-title">비기능 요구사항 (Non-Functional Requirements)</div>
+    </div>
+    <div class="section-body">
+      <table>
+        <thead><tr><th>항목</th><th>요구사항</th></tr></thead>
+        <tbody>
+          <tr><td>성능</td><td>부품 조회 및 이력 팝업 응답 2초 이내</td></tr>
+          <tr><td>데이터 보존</td><td>불량 이력 데이터 최소 5년 보존</td></tr>
+          <tr><td>동시 사용자</td><td>최소 50명 동시 접속 지원</td></tr>
+          <tr><td>접근성</td><td>태블릿 및 모바일 브라우저 대응 (현장 검사자 활용)</td></tr>
+          <tr><td>보안</td><td>역할별 접근 권한 분리, 데이터 수정 이력 감사 로그</td></tr>
+          <tr><td>백업</td><td>일 1회 자동 백업</td></tr>
+          <tr><td>가용성</td><td>업무 시간 기준 99% 이상</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 5. 화면 구성 -->
+  <div class="section" id="ux">
+    <div class="section-header">
+      <div class="section-num">5</div>
+      <div class="section-title">화면 구성 (UX Flow)</div>
+    </div>
+    <div class="section-body">
+      <div class="subsection">
+        <div class="subsection-title">5.1 입고 검사 화면 플로우</div>
+        <div class="flow">
+          <div class="flow-step">
+            <div class="flow-icon">①</div>
+            <div class="flow-content">
+              <div class="flow-label">부품번호 입력 / 바코드 스캔</div>
+              <div class="flow-detail">키보드 직접 입력 또는 USB 바코드 스캐너 연동</div>
+            </div>
+          </div>
+          <div class="flow-step">
+            <div class="flow-icon">②</div>
+            <div class="flow-content">
+              <div class="flow-label">DB 조회 — 불량 이력 존재 여부 확인</div>
+              <div class="flow-detail">최근 12개월 또는 10차수 이내 이력 조회 (2초 이내)</div>
+            </div>
+          </div>
+          <div class="flow-step">
+            <div class="flow-icon">③</div>
+            <div class="flow-content">
+              <div class="flow-label">불량 이력 알림 패널 자동 표시 (또는 "이력 없음" 안내)</div>
+              <div class="flow-detail">경고 등급, 주요 불량 유형 Top 3, 유의 체크리스트 자동 생성</div>
+            </div>
+          </div>
+          <div class="flow-step">
+            <div class="flow-icon">④</div>
+            <div class="flow-content">
+              <div class="flow-label">검사 수행</div>
+              <div class="flow-detail">체크리스트 항목 순서대로 확인</div>
+            </div>
+          </div>
+          <div class="flow-step">
+            <div class="flow-icon">⑤</div>
+            <div class="flow-content">
+              <div class="flow-label">결과 등록 — 합격 / 불합격 / 특채</div>
+              <div class="flow-detail">불합격 시 → 불량 유형 등록 → 조치 내용 등록 → 저장</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="subsection">
+        <div class="subsection-title">5.2 입고 검사 화면 와이어프레임</div>
+        <div class="wireframe">┌─────────────────────────────────────────────────────────────┐
+│  입고 검사                                                   │
+├──────────────────────────┬──────────────────────────────────┤
+│  부품번호: [P-20341  🔍] │  ⚠️ 불량 이력 알림  [경고]       │
+│  부품명: 브라켓 A형      │──────────────────────────────────│
+│  공급사: OO정밀          │  최근 5차수 불량 발생: 3회       │
+│  입고일: 2026-04-30      │                                  │
+│  입고수량: [        ]    │  주요 불량 유형                  │
+│  검사수량: [        ]    │  🔴 외관(스크래치)  — 3회        │
+│                          │  🟠 치수 불량      — 1회         │
+│  검사 유의 체크리스트    │  🟡 포장 불량      — 1회         │
+│  ☐ 표면 스크래치 확인   │                                  │
+│  ☐ 치수 측정 (도면 대비) │  최근 발생: 2026-03-12           │
+│  ☐ 포장 상태 확인       │  (25차 입고, 불량률 4.2%)        │
+│                          │                                  │
+│  [합격]  [불합격]  [특채] │  [상세 이력 보기]                │
+└──────────────────────────┴──────────────────────────────────┘</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. 데이터 모델 -->
+  <div class="section" id="data">
+    <div class="section-header">
+      <div class="section-num">6</div>
+      <div class="section-title">데이터 모델 (주요 테이블)</div>
+    </div>
+    <div class="section-body">
+      <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap:16px;">
+        <div style="border:1px solid #e4e8f0; border-radius:8px; overflow:hidden;">
+          <div style="background:#1a1a2e; color:#c5c8ff; padding:10px 16px; font-size:13px; font-weight:700;">PART_MASTER</div>
+          <div style="padding:12px 16px; font-size:12px; line-height:2; color:#444;">
+            <span style="color:#7c83fd; font-weight:600;">part_id</span> PK<br>
+            <span style="color:#7c83fd;">part_no</span> UNIQUE<br>
+            part_name<br>
+            <span style="color:#7c83fd;">supplier_id</span> FK<br>
+            category<br>
+            quality_grade (A/B/C/D)<br>
+            created_at / updated_at
+          </div>
+        </div>
+        <div style="border:1px solid #e4e8f0; border-radius:8px; overflow:hidden;">
+          <div style="background:#1a1a2e; color:#c5c8ff; padding:10px 16px; font-size:13px; font-weight:700;">INCOMING_INSPECTION</div>
+          <div style="padding:12px 16px; font-size:12px; line-height:2; color:#444;">
+            <span style="color:#7c83fd; font-weight:600;">inspection_id</span> PK<br>
+            <span style="color:#7c83fd;">part_id</span> FK<br>
+            lot_no<br>
+            incoming_date<br>
+            incoming_qty / inspect_qty / defect_qty<br>
+            result (합격/불합격/특채)<br>
+            <span style="color:#7c83fd;">inspector_id</span> FK<br>
+            created_at
+          </div>
+        </div>
+        <div style="border:1px solid #e4e8f0; border-radius:8px; overflow:hidden;">
+          <div style="background:#1a1a2e; color:#c5c8ff; padding:10px 16px; font-size:13px; font-weight:700;">DEFECT_DETAIL</div>
+          <div style="padding:12px 16px; font-size:12px; line-height:2; color:#444;">
+            <span style="color:#7c83fd; font-weight:600;">defect_id</span> PK<br>
+            <span style="color:#7c83fd;">inspection_id</span> FK<br>
+            defect_type_code<br>
+            defect_count<br>
+            defect_description<br>
+            action_code<br>
+            photo_urls[ ]<br>
+            created_at
+          </div>
+        </div>
+        <div style="border:1px solid #e4e8f0; border-radius:8px; overflow:hidden;">
+          <div style="background:#1a1a2e; color:#c5c8ff; padding:10px 16px; font-size:13px; font-weight:700;">DEFECT_TYPE_CODE</div>
+          <div style="padding:12px 16px; font-size:12px; line-height:2; color:#444;">
+            <span style="color:#7c83fd; font-weight:600;">defect_type_code</span> PK<br>
+            defect_type_name<br>
+            category<br>
+            is_active
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. 기술 스택 -->
+  <div class="section" id="stack">
+    <div class="section-header">
+      <div class="section-num">7</div>
+      <div class="section-title">구현 기술 스택 (권장)</div>
+    </div>
+    <div class="section-body">
+      <table>
+        <thead><tr><th>영역</th><th>기술</th><th>비고</th></tr></thead>
+        <tbody>
+          <tr><td>Frontend</td><td><span class="tag tag-blue">React + TypeScript</span></td><td>태블릿 대응 반응형</td></tr>
+          <tr><td>Backend</td><td><span class="tag tag-blue">Node.js (Express)</span> 또는 <span class="tag tag-blue">Python (FastAPI)</span></td><td>REST API</td></tr>
+          <tr><td>Database</td><td><span class="tag tag-blue">PostgreSQL</span></td><td>이력 데이터 장기 보존</td></tr>
+          <tr><td>파일 저장</td><td><span class="tag tag-blue">S3 호환 오브젝트 스토리지</span></td><td>불량 사진 저장</td></tr>
+          <tr><td>인증</td><td><span class="tag tag-blue">JWT + RBAC</span></td><td>Role-based Access Control</td></tr>
+          <tr><td>차트</td><td><span class="tag tag-blue">Recharts / Chart.js</span></td><td>불량 통계 시각화</td></tr>
+          <tr><td>리포트</td><td><span class="tag tag-blue">pdf-lib</span> 또는 서버사이드 PDF</td><td></td></tr>
+          <tr><td>배포</td><td><span class="tag tag-blue">Docker + Nginx</span></td><td>사내 서버 또는 클라우드</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 8. 로드맵 -->
+  <div class="section" id="roadmap">
+    <div class="section-header">
+      <div class="section-num">8</div>
+      <div class="section-title">개발 우선순위 및 단계별 로드맵</div>
+    </div>
+    <div class="section-body">
+      <div class="phase-grid">
+        <div class="phase-card p1">
+          <div class="phase-num">PHASE 1 — MVP</div>
+          <div class="phase-name" style="color:#166534;">핵심 기능 우선</div>
+          <div class="phase-item">부품 마스터 등록/조회</div>
+          <div class="phase-item">불량 데이터 입력 및 저장</div>
+          <div class="phase-item">불량 이력 알림 팝업</div>
+          <div class="phase-item">부품별 이력 조회 화면</div>
+          <div class="phase-item">바코드 스캐너 연동 (USB HID)</div>
+        </div>
+        <div class="phase-card p2">
+          <div class="phase-num">PHASE 2 — 분석·리포트</div>
+          <div class="phase-name" style="color:#92400e;">분석 및 리포트</div>
+          <div class="phase-item">불량 유형 통계 차트</div>
+          <div class="phase-item">부적합 리포트 PDF/엑셀 출력</div>
+          <div class="phase-item">공급사별 불량 현황</div>
+          <div class="phase-item">부품 등급 자동 산정</div>
+          <div class="phase-item">월말 정기 리포트 자동 발송</div>
+        </div>
+        <div class="phase-card p3">
+          <div class="phase-num">PHASE 3 — 고도화</div>
+          <div class="phase-name" style="color:#5b21b6;">고도화</div>
+          <div class="phase-item">반복 불량 경고 알림 (이메일)</div>
+          <div class="phase-item">모바일 최적화</div>
+          <div class="phase-item">외부 ERP 연동</div>
+          <div class="phase-item">사내 메신저 알림 연동</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 9. KPI -->
+  <div class="section" id="kpi">
+    <div class="section-header">
+      <div class="section-num">9</div>
+      <div class="section-title">성공 지표 (KPI)</div>
+    </div>
+    <div class="section-body">
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-label">불량 이력 참조율</div>
+          <div class="kpi-value">90%</div>
+          <div class="kpi-desc">입고 검사 시 이력 확인 비율</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">반복 불량 감소</div>
+          <div class="kpi-value">-30%</div>
+          <div class="kpi-desc">동일 불량 유형 반복 발생률 (전년 대비)</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">데이터 입력 누락률</div>
+          <div class="kpi-value">5%</div>
+          <div class="kpi-desc">이하 목표</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">리포트 생성 시간</div>
+          <div class="kpi-value">-80%</div>
+          <div class="kpi-desc">수작업 대비 단축</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════ 구체화된 요구사항 ═══════════════════════════ -->
+
+  <div style="margin: 48px 0 24px; padding-bottom: 12px; border-bottom: 3px solid #7c83fd;">
+    <div style="font-size:11px; font-weight:700; color:#7c83fd; letter-spacing:2px; text-transform:uppercase; margin-bottom:6px;">Part 2</div>
+    <div style="font-size:22px; font-weight:800; color:#1a1a2e;">구체화된 요구사항</div>
+    <div style="font-size:13px; color:#666; margin-top:4px;">PRD v1.0 기반 세부 구현 명세 — 작성일: 2026-05-13</div>
+  </div>
+
+  <!-- C1. 불량 유형 코드 -->
+  <div class="section" id="defect-code">
+    <div class="section-header">
+      <div class="section-num" style="background:#e53e3e;">C1</div>
+      <div class="section-title">불량 유형 코드 정의</div>
+    </div>
+    <div class="section-body">
+      <div class="subsection">
+        <div class="subsection-title">코드 목록</div>
+        <table>
+          <thead><tr><th>코드</th><th>대분류</th><th>불량 유형명</th><th>판정 기준</th></tr></thead>
+          <tbody>
+            <tr><td>D001</td><td><span class="tag tag-orange">치수</span></td><td>치수 초과</td><td>도면 공차 ±0.1mm 이상 벗어남</td></tr>
+            <tr><td>D002</td><td><span class="tag tag-orange">치수</span></td><td>치수 미달</td><td>도면 공차 하한 이하</td></tr>
+            <tr><td>D003</td><td><span class="tag tag-red">외관</span></td><td>스크래치</td><td>길이 3mm 이상 또는 폭 0.5mm 이상</td></tr>
+            <tr><td>D004</td><td><span class="tag tag-red">외관</span></td><td>이물 부착</td><td>표면에 제거 불가한 이물질 존재</td></tr>
+            <tr><td>D005</td><td><span class="tag tag-red">외관</span></td><td>변형/찍힘</td><td>육안 식별 가능한 형상 변형</td></tr>
+            <tr><td>D006</td><td><span class="tag tag-blue">기능</span></td><td>작동 불량</td><td>규정 토크/압력 범위 미달</td></tr>
+            <tr><td>D007</td><td><span class="tag tag-blue">기능</span></td><td>조립 불량</td><td>규정 조립 토크 범위 이탈</td></tr>
+            <tr><td>D008</td><td><span class="tag tag-purple">재질</span></td><td>재질 부적합</td><td>성적서와 실측치 불일치</td></tr>
+            <tr><td>D009</td><td><span class="tag tag-yellow">표면처리</span></td><td>도금 불량</td><td>도금 두께 기준치 미달 또는 박리</td></tr>
+            <tr><td>D010</td><td><span class="tag tag-yellow">표면처리</span></td><td>녹/산화</td><td>표면에 녹 또는 산화 흔적 존재</td></tr>
+            <tr><td>D011</td><td><span class="tag tag-green">포장</span></td><td>포장 파손</td><td>내용물 노출 또는 완충재 누락</td></tr>
+            <tr><td>D012</td><td><span class="tag tag-green">포장</span></td><td>수량 불일치</td><td>포장 기재 수량과 실수량 불일치</td></tr>
+            <tr><td>D099</td><td>기타</td><td>직접 입력</td><td>위 항목 해당 없을 시 직접 기술</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="notice">코드 추가/변경은 시스템 관리자 및 품질 관리자만 가능. 비활성화된 코드는 신규 등록에 사용 불가, 기존 데이터는 유지. 초기 코드 목록은 품질팀과 협의 후 시스템 오픈 전 확정.</div>
+    </div>
+  </div>
+
+  <!-- C2. 알림 로직 -->
+  <div class="section" id="alert-logic">
+    <div class="section-header">
+      <div class="section-num" style="background:#e53e3e;">C2</div>
+      <div class="section-title">불량 이력 알림 로직 상세</div>
+    </div>
+    <div class="section-body">
+      <div class="subsection">
+        <div class="subsection-title">2.1 경고 등급 기준</div>
+        <table>
+          <thead><tr><th>등급</th><th>색상</th><th>조건</th></tr></thead>
+          <tbody>
+            <tr><td><span class="tag tag-green">정상</span></td><td>초록</td><td>조회 범위 내 불량 이력 없음</td></tr>
+            <tr><td><span class="tag tag-yellow">주의</span></td><td>노랑</td><td>조회 범위 내 1~2회 불량 발생</td></tr>
+            <tr><td><span class="tag tag-orange">경고</span></td><td>주황</td><td>3차수 연속 불량 <strong>또는</strong> 불량률 5% 초과</td></tr>
+            <tr><td><span class="tag tag-red">위험</span></td><td>빨강</td><td>5차수 연속 불량 <strong>또는</strong> 불량률 10% 초과</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="subsection">
+        <div class="subsection-title">2.2 조회 범위</div>
+        <div class="code-block"><span class="comment">// 둘 중 더 많은 데이터를 포함하는 기준 적용</span>
+<span class="key">조회 범위</span>: 최근 12개월 이내 입고 이력
+          또는 최근 10차수 이내 입고 이력
+
+<span class="key">표시 항목</span>:
+  - 불량 발생 차수 수 / 전체 조회 차수 수
+  - 불량 유형별 발생 횟수 (빈도 높은 순 3개)
+  - 가장 최근 불량 발생일 및 차수
+  - 최근 불량 발생 시 불량률</div>
+      </div>
+      <div class="subsection">
+        <div class="subsection-title">2.3 자동 생성 안내 문구 규칙</div>
+        <div class="code-block"><span class="comment">// 기본 형식</span>
+<span class="val">"이 부품은 {1위 불량 유형명} 불량이 {N}회 발생했습니다.
+ 해당 항목을 중점 검사하십시오."</span>
+
+<span class="comment">// 복수 불량 유형 발생 시</span>
+<span class="val">"이 부품은 {1위 불량 유형명}({N}회), {2위 불량 유형명}({M}회)
+ 불량 이력이 있습니다. 중점 검사 항목을 확인하십시오."</span>
+
+<span class="comment">// 이력 없을 시</span>
+<span class="val">"이 부품의 불량 이력이 없습니다. 표준 검사 절차를 적용하십시오."</span>
+
+<span class="comment">// 위험 등급 추가 문구</span>
+<span class="val">"⚠️ 반복 불량 부품입니다. 검사 후 품질 관리자에게 즉시 보고하십시오."</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- C3. 차수 관리 -->
+  <div class="section" id="lot-mgmt">
+    <div class="section-header">
+      <div class="section-num" style="background:#e53e3e;">C3</div>
+      <div class="section-title">입고 차수(로트) 관리 규칙</div>
+    </div>
+    <div class="section-body">
+      <div class="subsection">
+        <div class="subsection-title">3.1 차수 번호 자동 채번</div>
+        <div class="code-block"><span class="key">형식</span>: <span class="val">{부품번호}-{연도 4자리}-{순번 3자리}</span>
+<span class="key">예시</span>: <span class="val">P-20341-2026-001</span>
+
+- 시스템 자동 부여 (검사자 직접 입력 불가)
+- 동일 부품번호의 연도 내 첫 번째 입고부터 001 시작
+- 연도가 바뀌면 순번 초기화</div>
+      </div>
+      <div class="subsection">
+        <div class="subsection-title">3.2 동일 부품 당일 복수 입고 처리</div>
+        <div class="code-block">- 별도 차수로 각각 등록 (차수 번호 자동 증가)
+- 비고란에 <span class="val">"분할 입고 {N}건 중 {M}번째"</span> 자동 기재
+- 동일 발주번호 입력 시 분할 입고 여부 안내 팝업 표시</div>
+      </div>
+      <div class="subsection">
+        <div class="subsection-title">3.3 발주번호(PO) 연계</div>
+        <table>
+          <thead><tr><th>항목</th><th>내용</th></tr></thead>
+          <tbody>
+            <tr><td>입력 여부</td><td>선택 입력 (Phase 1 필수 아님)</td></tr>
+            <tr><td>조회 기능</td><td>동일 PO번호로 등록된 입고 건 묶어서 조회 가능</td></tr>
+            <tr><td>ERP 연동 후</td><td>PO번호 기준으로 자동 매핑 (Phase 3)</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- C4. 권한 -->
+  <div class="section" id="auth">
+    <div class="section-header">
+      <div class="section-num" style="background:#e53e3e;">C4</div>
+      <div class="section-title">사용자 권한 매트릭스</div>
+    </div>
+    <div class="section-body">
+      <div class="subsection">
+        <div class="subsection-title">역할 정의</div>
+        <table>
+          <thead><tr><th>역할 코드</th><th>역할명</th><th>대상</th></tr></thead>
+          <tbody>
+            <tr><td><code>ROLE_INSPECTOR</code></td><td>입고 검사자</td><td>현장 검사 담당자</td></tr>
+            <tr><td><code>ROLE_QC</code></td><td>품질 관리자</td><td>품질팀 담당자</td></tr>
+            <tr><td><code>ROLE_BUYER</code></td><td>구매/조달 담당자</td><td>구매팀 담당자</td></tr>
+            <tr><td><code>ROLE_ADMIN</code></td><td>시스템 관리자</td><td>IT/시스템 운영 담당자</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="subsection">
+        <div class="subsection-title">기능별 권한</div>
+        <table>
+          <thead>
+            <tr>
+              <th>기능</th>
+              <th class="td-center">INSPECTOR</th>
+              <th class="td-center">QC</th>
+              <th class="td-center">BUYER</th>
+              <th class="td-center">ADMIN</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>불량 데이터 조회</td><td class="td-center ok">✅</td><td class="td-center ok">✅</td><td class="td-center ok">✅</td><td class="td-center ok">✅</td></tr>
+            <tr><td>불량 데이터 등록</td><td class="td-center ok">✅</td><td class="td-center ok">✅</td><td class="td-center no">—</td><td class="td-center ok">✅</td></tr>
+            <tr><td>불량 데이터 수정 (등록 후 24h 이내)</td><td class="td-center ok">✅</td><td class="td-center ok">✅</td><td class="td-center no">—</td><td class="td-center ok">✅</td></tr>
+            <tr><td>불량 데이터 수정 (24h 이후)</td><td class="td-center no">—</td><td class="td-center ok">✅</td><td class="td-center no">—</td><td class="td-center ok">✅</td></tr>
+            <tr><td>불량 데이터 삭제</td><td class="td-center no">—</td><td class="td-center no">—</td><td class="td-center no">—</td><td class="td-center ok">✅</td></tr>
+            <tr><td>특채 결정 등록</td><td class="td-center no">—</td><td class="td-center ok">✅</td><td class="td-center no">—</td><td class="td-center ok">✅</td></tr>
+            <tr><td>부품 마스터 등록/수정</td><td class="td-center no">—</td><td class="td-center ok">✅</td><td class="td-center ok">✅</td><td class="td-center ok">✅</td></tr>
+            <tr><td>리포트 출력</td><td class="td-center ok">✅</td><td class="td-center ok">✅</td><td class="td-center ok">✅</td><td class="td-center ok">✅</td></tr>
+            <tr><td>불량 유형 코드 관리</td><td class="td-center no">—</td><td class="td-center ok">✅</td><td class="td-center no">—</td><td class="td-center ok">✅</td></tr>
+            <tr><td>임계값/경고 등급 설정</td><td class="td-center no">—</td><td class="td-center ok">✅</td><td class="td-center no">—</td><td class="td-center ok">✅</td></tr>
+            <tr><td>사용자 계정 관리</td><td class="td-center no">—</td><td class="td-center no">—</td><td class="td-center no">—</td><td class="td-center ok">✅</td></tr>
+            <tr><td>감사 로그 조회</td><td class="td-center no">—</td><td class="td-center ok">✅</td><td class="td-center no">—</td><td class="td-center ok">✅</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="notice">모든 수정 작업은 수정 전 데이터를 별도 이력 테이블에 보존. 수정 사유 입력 필수 (최소 10자 이상).</div>
+    </div>
+  </div>
+
+  <!-- C5. 보고서 -->
+  <div class="section" id="report-format">
+    <div class="section-header">
+      <div class="section-num" style="background:#e53e3e;">C5</div>
+      <div class="section-title">부적합 보고서 출력 형식</div>
+    </div>
+    <div class="section-body">
+      <div class="subsection">
+        <div class="subsection-title">필수 포함 항목</div>
+        <div class="code-block"><span class="key">[헤더]</span>
+  문서 번호 (자동 채번): <span class="val">QR-{연도}-{순번}</span>
+  부품번호 / 부품명 / 공급사명
+  입고 차수 / 입고일
+
+<span class="key">[본문]</span>
+  입고 수량 / 검사 수량 / 불량 수량 / 불량률(%)
+  불량 유형 (코드 + 명칭)
+  불량 상세 내용 (텍스트)
+  불량 사진 (최대 4장/페이지, 페이지 자동 추가)
+  조치 내용 / 조치 완료 예정일
+
+<span class="key">[푸터]</span>
+  작성자 (성명 + 서명란)
+  검토자 (품질 관리자 성명 + 서명란)
+  승인자 (팀장 성명 + 서명란)
+  출력 일시</div>
+      </div>
+      <div class="subsection">
+        <div class="subsection-title">출력 형식 및 정기 발송</div>
+        <table>
+          <thead><tr><th>항목</th><th>내용</th></tr></thead>
+          <tbody>
+            <tr><td>PDF 형식</td><td>A4 세로, 사내 로고 포함 양식, 즉시 다운로드</td></tr>
+            <tr><td>엑셀 형식</td><td>데이터 원본 형식, 필터/정렬 가능 구조</td></tr>
+            <tr><td>정기 발송 주기</td><td>매월 마지막 영업일 오후 5시</td></tr>
+            <tr><td>수신 대상</td><td>품질 관리자 전원 (시스템에 등록된 이메일)</td></tr>
+            <tr><td>발송 내용</td><td>해당 월 불량 발생 현황 요약 + 불량 TOP 10 부품</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- C6. 알림 에스컬레이션 -->
+  <div class="section" id="notification">
+    <div class="section-header">
+      <div class="section-num" style="background:#e53e3e;">C6</div>
+      <div class="section-title">알림 및 에스컬레이션 규칙</div>
+    </div>
+    <div class="section-body">
+      <div class="subsection">
+        <div class="subsection-title">알림 발송 조건</div>
+        <table>
+          <thead><tr><th>조건</th><th>알림 대상</th><th>알림 채널</th></tr></thead>
+          <tbody>
+            <tr><td>동일 부품 3차수 연속 불량 발생</td><td>담당 품질 관리자</td><td>시스템 알림 + 이메일</td></tr>
+            <tr><td>불량률 10% 초과 입고</td><td>품질 관리자 + 구매 담당자</td><td>시스템 알림 + 이메일</td></tr>
+            <tr><td>"위험" 등급 부품 재입고</td><td>담당 품질 관리자</td><td>검사 화면 즉시 경고 팝업</td></tr>
+            <tr><td>불량 사진 미첨부 상태로 24h 경과</td><td>등록 검사자</td><td>시스템 알림</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="notice">
+        <strong>알림 채널 우선순위</strong><br>
+        1순위: 시스템 내 알림 (헤더 벨 아이콘, 읽기 전까지 유지)<br>
+        2순위: 이메일 (시스템에 등록된 담당자 이메일)<br>
+        ※ 사내 메신저 연동은 Phase 3에서 검토
+      </div>
+    </div>
+  </div>
+
+  <!-- C7. 마이그레이션 -->
+  <div class="section" id="migration">
+    <div class="section-header">
+      <div class="section-num" style="background:#e53e3e;">C7</div>
+      <div class="section-title">초기 데이터 마이그레이션</div>
+    </div>
+    <div class="section-body">
+      <div class="subsection">
+        <div class="subsection-title">이관 범위 및 방법</div>
+        <div class="code-block"><span class="key">대상 기간</span>: 2024-01-01 이후 불량 이력 (최근 2년)
+<span class="key">이관 방법</span>: 시스템 관리자 전용 엑셀 업로드 메뉴 (운영 개시 전 1회성)</div>
+      </div>
+      <div class="subsection">
+        <div class="subsection-title">엑셀 업로드 템플릿 필수 컬럼</div>
+        <table>
+          <thead><tr><th>컬럼명</th><th>형식</th><th>필수</th><th>비고</th></tr></thead>
+          <tbody>
+            <tr><td>부품번호</td><td>문자열</td><td><span class="tag tag-red">필수</span></td><td>부품 마스터에 등록된 번호</td></tr>
+            <tr><td>입고일</td><td>YYYY-MM-DD</td><td><span class="tag tag-red">필수</span></td><td></td></tr>
+            <tr><td>입고 수량</td><td>숫자</td><td><span class="tag tag-red">필수</span></td><td></td></tr>
+            <tr><td>검사 수량</td><td>숫자</td><td><span class="tag tag-red">필수</span></td><td></td></tr>
+            <tr><td>불량 수량</td><td>숫자</td><td><span class="tag tag-red">필수</span></td><td></td></tr>
+            <tr><td>불량 유형 코드</td><td>문자열</td><td><span class="tag tag-red">필수</span></td><td>D001~D099</td></tr>
+            <tr><td>조치 내용</td><td>문자열</td><td><span class="tag tag-green">선택</span></td><td></td></tr>
+            <tr><td>불량 상세 내용</td><td>문자열</td><td><span class="tag tag-green">선택</span></td><td></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="subsection">
+        <div class="subsection-title">오류 처리 규칙</div>
+        <div class="code-block"><span class="key">필수 컬럼 누락</span>   → 해당 행 오류 처리, 완료 후 오류 목록 엑셀 다운로드 제공
+<span class="key">부품번호 미등록</span>   → 오류 처리 (부품 마스터 먼저 등록 필요)
+<span class="key">불량 유형 코드 미등록</span> → <span class="val">D099(기타)</span>로 자동 매핑 후 수동 수정 안내
+<span class="key">날짜 형식 오류</span>   → 오류 처리</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- C8. 연동 -->
+  <div class="section" id="integration">
+    <div class="section-header">
+      <div class="section-num" style="background:#e53e3e;">C8</div>
+      <div class="section-title">외부 시스템 연동 범위</div>
+    </div>
+    <div class="section-body">
+      <div class="subsection">
+        <div class="subsection-title">연동 로드맵</div>
+        <table>
+          <thead><tr><th>연동 대상</th><th>방향</th><th>연동 데이터</th><th>적용 Phase</th></tr></thead>
+          <tbody>
+            <tr><td>ERP (부품 마스터)</td><td>ERP → 본 시스템</td><td>부품번호, 부품명, 공급사</td><td><span class="tag tag-purple">Phase 3</span></td></tr>
+            <tr><td>ERP (발주/입고 정보)</td><td>ERP → 본 시스템</td><td>PO번호, 입고 예정일, 입고 수량</td><td><span class="tag tag-purple">Phase 3</span></td></tr>
+            <tr><td>바코드 스캐너</td><td>스캐너 → 본 시스템</td><td>부품번호 문자열</td><td><span class="tag tag-green">Phase 1</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="subsection">
+        <div class="subsection-title">Phase 1 바코드 스캐너 연동 사양</div>
+        <div class="code-block"><span class="key">연동 방식</span>: USB HID (키보드 입력 에뮬레이션)
+<span class="key">동작</span>: 스캔 시 부품번호 필드에 자동 입력 후 Enter 처리
+<span class="key">지원 바코드 형식</span>: Code 128, QR Code, EAN-13
+<span class="key">드라이버</span>: 별도 설치 불필요 (웹 브라우저 표준 입력 이벤트 활용)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- C9. 성능 -->
+  <div class="section" id="performance">
+    <div class="section-header">
+      <div class="section-num" style="background:#e53e3e;">C9</div>
+      <div class="section-title">성능 및 운영 요구사항 상세</div>
+    </div>
+    <div class="section-body">
+      <div class="subsection">
+        <div class="subsection-title">응답 시간 기준</div>
+        <table>
+          <thead><tr><th>기능</th><th>목표 응답 시간</th></tr></thead>
+          <tbody>
+            <tr><td>부품번호 입력 후 불량 이력 팝업 표시</td><td><span class="tag tag-green">2초 이내</span></td></tr>
+            <tr><td>불량 데이터 저장</td><td><span class="tag tag-green">3초 이내</span></td></tr>
+            <tr><td>리포트 PDF 생성</td><td><span class="tag tag-yellow">10초 이내</span></td></tr>
+            <tr><td>전체 검색 (복합 필터)</td><td><span class="tag tag-green">5초 이내</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="subsection">
+        <div class="subsection-title">데이터 보존 및 백업 정책</div>
+        <div class="code-block"><span class="key">불량 이력 데이터</span>: 최소 5년 보존
+<span class="key">감사 로그</span>: 최소 3년 보존
+<span class="key">첨부 사진</span>: 최소 5년 보존
+<span class="key">삭제된 데이터</span>: 논리 삭제 처리 (물리 삭제 금지), 관리자 복원 가능
+
+<span class="key">자동 백업</span>: 매일 오전 2시 전체 백업
+<span class="key">보존 기간</span>: 최근 30일 일별 백업 / 최근 12개월 월별 백업
+<span class="key">백업 실패 시</span>: 시스템 관리자에게 즉시 이메일 알림</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 푸터 -->
+  <div style="text-align:center; padding:32px 0 48px; color:#aaa; font-size:12px;">
+    본 문서는 PRD v1.0 기반으로 작성된 구체화된 요구사항 명세서입니다.<br>
+    이해관계자 검토 및 협의 후 내용이 변경될 수 있으며, 변경 시 버전을 업데이트합니다.
+  </div>
+
+</main>
+
+<script>
+  // 스크롤 시 현재 섹션 하이라이트
+  const navItems = document.querySelectorAll('.nav-item');
+  const sections = document.querySelectorAll('.section');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const id = entry.target.id;
+        navItems.forEach(item => {
+          item.classList.toggle('active', item.getAttribute('href') === '#' + id);
+        });
+      }
+    });
+  }, { rootMargin: '-20% 0px -70% 0px' });
+
+  sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

@@ -1,0 +1,1608 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>부품 불량 이력 관리 시스템</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+:root {
+  --primary: #1e3a5f;
+  --primary-light: #2563eb;
+  --sidebar-bg: #0f172a;
+  --bg: #f1f5f9;
+  --card: #ffffff;
+  --border: #e2e8f0;
+  --text: #0f172a;
+  --text-2: #475569;
+  --text-3: #94a3b8;
+  --red: #dc2626;
+  --orange: #f97316;
+  --yellow: #eab308;
+  --green: #22c55e;
+  --blue: #3b82f6;
+  --purple: #8b5cf6;
+  --r: 8px;
+  --r-lg: 12px;
+  --shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.05);
+  --shadow-md: 0 4px 6px -1px rgba(0,0,0,.08);
+  --shadow-lg: 0 10px 25px -5px rgba(0,0,0,.1), 0 4px 6px -2px rgba(0,0,0,.05);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);display:flex;font-size:14px;line-height:1.5}
+
+/* ── Sidebar ── */
+.sidebar{width:230px;min-height:100vh;background:var(--sidebar-bg);display:flex;flex-direction:column;position:fixed;left:0;top:0;z-index:100;transition:.3s}
+.s-logo{padding:18px 16px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;gap:10px}
+.s-logo-icon{width:36px;height:36px;background:linear-gradient(135deg,#2563eb,#7c3aed);border-radius:var(--r);display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;flex-shrink:0}
+.s-logo-text{color:#fff;font-size:12px;font-weight:600;line-height:1.4}
+.s-logo-text small{display:block;font-size:10px;font-weight:400;color:rgba(255,255,255,.4)}
+.s-menu{flex:1;padding:10px 0;overflow-y:auto}
+.s-section{padding:14px 14px 4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.25)}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 16px;color:rgba(255,255,255,.55);cursor:pointer;transition:.2s;border-left:3px solid transparent;font-size:13px;position:relative}
+.nav-item:hover{background:rgba(255,255,255,.06);color:rgba(255,255,255,.9)}
+.nav-item.active{background:rgba(37,99,235,.2);color:#fff;border-left-color:#2563eb;font-weight:500}
+.nav-item i{width:18px;text-align:center;font-size:14px}
+.nav-badge{margin-left:auto;background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;min-width:18px;text-align:center}
+.s-footer{padding:14px 16px;border-top:1px solid rgba(255,255,255,.07)}
+.s-user{display:flex;align-items:center;gap:9px}
+.s-user-avatar{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#2563eb,#7c3aed);display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:600}
+.s-user-info{flex:1}
+.s-user-name{color:#fff;font-size:12px;font-weight:600}
+.s-user-role{color:rgba(255,255,255,.4);font-size:10px}
+
+/* ── Main ── */
+.main{margin-left:230px;flex:1;display:flex;flex-direction:column;min-height:100vh}
+.topbar{background:#fff;border-bottom:1px solid var(--border);padding:0 24px;height:58px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;box-shadow:var(--shadow)}
+.tb-left{display:flex;align-items:center;gap:12px}
+.page-title{font-size:15px;font-weight:700;color:var(--text)}
+.breadcrumb{font-size:11px;color:var(--text-3);display:flex;align-items:center;gap:4px}
+.tb-right{display:flex;align-items:center;gap:14px}
+.tb-date{font-size:12px;color:var(--text-2)}
+.tb-btn{width:32px;height:32px;border-radius:var(--r);border:1px solid var(--border);background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-2);font-size:13px;position:relative}
+.tb-btn .dot{position:absolute;top:5px;right:5px;width:7px;height:7px;background:var(--red);border-radius:50%;border:2px solid #fff}
+.page-wrap{flex:1;padding:22px 24px}
+
+/* ── Pages ── */
+.page{display:none}
+.page.active{display:block}
+
+/* ── Utility ── */
+.card{background:#fff;border-radius:var(--r-lg);box-shadow:var(--shadow);padding:20px}
+.card-sm{padding:14px 16px}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.card-title{font-size:13px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:7px}
+.card-title i{color:var(--text-3);font-size:13px}
+.mb8{margin-bottom:8px}
+.mb12{margin-bottom:12px}
+.mb16{margin-bottom:16px}
+.mb20{margin-bottom:20px}
+.mb24{margin-bottom:24px}
+.flex{display:flex}
+.flex-center{display:flex;align-items:center}
+.flex-between{display:flex;align-items:center;justify-content:space-between}
+.gap4{gap:4px}
+.gap8{gap:8px}
+.gap12{gap:12px}
+.gap16{gap:16px}
+.gap20{gap:20px}
+.w100{width:100%}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.text-sm{font-size:12px}
+.text-xs{font-size:11px}
+.text-secondary{color:var(--text-2)}
+.text-muted{color:var(--text-3)}
+.text-red{color:var(--red)}
+.text-green{color:#16a34a}
+.text-orange{color:var(--orange)}
+.text-blue{color:var(--blue)}
+.fw600{font-weight:600}
+.fw700{font-weight:700}
+
+/* ── Stats ── */
+.stat-card{background:#fff;border-radius:var(--r-lg);padding:16px 18px;box-shadow:var(--shadow);display:flex;align-items:center;gap:13px}
+.stat-icon{width:42px;height:42px;border-radius:var(--r);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.si-blue{background:#dbeafe;color:#1d4ed8}
+.si-red{background:#fee2e2;color:#dc2626}
+.si-orange{background:#ffedd5;color:#c2410c}
+.si-green{background:#dcfce7;color:#15803d}
+.si-purple{background:#f3e8ff;color:#7c3aed}
+.stat-val{font-size:22px;font-weight:700;line-height:1;margin-bottom:2px}
+.stat-lbl{font-size:11px;color:var(--text-2)}
+.stat-change{font-size:11px;margin-top:2px}
+.change-up{color:var(--red)}
+.change-dn{color:#16a34a}
+
+/* ── Badges ── */
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;white-space:nowrap}
+.badge-A{background:#dcfce7;color:#15803d}
+.badge-B{background:#dbeafe;color:#1d4ed8}
+.badge-C{background:#fef9c3;color:#a16207}
+.badge-D{background:#fee2e2;color:#991b1b}
+.badge-pass{background:#dcfce7;color:#15803d}
+.badge-fail{background:#fee2e2;color:#991b1b}
+.badge-special{background:#fff7ed;color:#c2410c}
+.badge-return{background:#fdf4ff;color:#7c3aed}
+.badge-info{background:#eff6ff;color:#1d4ed8}
+.badge-warn{background:#fffbeb;color:#b45309}
+.badge-gray{background:#f1f5f9;color:#64748b}
+
+/* ── Buttons ── */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--r);font-size:13px;font-weight:500;cursor:pointer;border:none;font-family:inherit;transition:.2s;white-space:nowrap}
+.btn-primary{background:var(--primary-light);color:#fff}
+.btn-primary:hover{background:#1d4ed8}
+.btn-danger{background:var(--red);color:#fff}
+.btn-danger:hover{background:#b91c1c}
+.btn-success{background:#22c55e;color:#fff}
+.btn-success:hover{background:#16a34a}
+.btn-warning{background:var(--orange);color:#fff}
+.btn-warning:hover{background:#ea580c}
+.btn-outline{background:#fff;border:1px solid var(--border);color:var(--text-2)}
+.btn-outline:hover{background:#f8fafc}
+.btn-ghost{background:transparent;color:var(--text-2);padding:6px 10px}
+.btn-ghost:hover{background:#f1f5f9}
+.btn-sm{padding:5px 10px;font-size:12px}
+.btn-lg{padding:11px 22px;font-size:14px}
+
+/* ── Forms ── */
+.form-group{margin-bottom:14px}
+.form-label{display:block;font-size:11px;font-weight:700;color:var(--text-2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em}
+.form-input,.form-select,.form-textarea{width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:var(--r);font-size:13px;font-family:inherit;color:var(--text);background:#fff;outline:none;transition:.2s}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--primary-light);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+.form-input.large{padding:11px 14px;font-size:15px}
+.form-textarea{resize:vertical;min-height:80px}
+.input-group{display:flex;gap:8px}
+.input-group .form-input{flex:1}
+.input-icon{position:relative}
+.input-icon i{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-3);font-size:13px}
+.input-icon .form-input{padding-left:32px}
+
+/* ── Tables ── */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+thead th{background:#f8fafc;padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border);white-space:nowrap}
+tbody td{padding:11px 14px;font-size:13px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:#f8fafc}
+.row-warn td{background:#fffbeb!important}
+.row-danger td{background:#fef2f2!important}
+
+/* ── Tabs ── */
+.tabs{display:flex;border-bottom:2px solid var(--border);margin-bottom:18px;gap:2px}
+.tab{padding:9px 16px;font-size:13px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:.2s;color:var(--text-2);font-weight:500}
+.tab:hover{color:var(--primary-light)}
+.tab.active{color:var(--primary-light);border-bottom-color:var(--primary-light);font-weight:700}
+
+/* ── Inspection Page ── */
+.insp-layout{display:grid;grid-template-columns:1fr 370px;gap:20px;align-items:start}
+.history-panel{background:#fff;border-radius:var(--r-lg);box-shadow:var(--shadow);overflow:hidden;position:sticky;top:80px}
+.hp-header{padding:14px 16px;background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff}
+.hp-header h3{font-size:13px;font-weight:700;display:flex;align-items:center;gap:7px}
+.hp-header .hp-sub{font-size:11px;opacity:.75;margin-top:3px}
+.hp-header.warn{background:linear-gradient(135deg,#dc2626,#f97316)}
+.hp-header.ok{background:linear-gradient(135deg,#16a34a,#22c55e)}
+.hp-body{padding:14px 16px}
+.hp-summary{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px}
+.hp-stat{text-align:center;padding:10px;background:#f8fafc;border-radius:var(--r)}
+.hp-stat-val{font-size:18px;font-weight:700;line-height:1}
+.hp-stat-lbl{font-size:10px;color:var(--text-2);margin-top:2px}
+.hp-section-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--text-2);margin-bottom:8px;margin-top:12px;display:flex;align-items:center;gap:6px}
+.freq-item{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid #f1f5f9}
+.freq-item:last-child{border-bottom:none}
+.freq-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.freq-name{flex:1;font-size:13px}
+.freq-bar-bg{width:70px;background:#f1f5f9;border-radius:4px;height:5px;overflow:hidden}
+.freq-bar{height:100%;border-radius:4px;background:var(--primary-light)}
+.freq-cnt{font-size:12px;font-weight:700;width:24px;text-align:right;color:var(--text-2)}
+.checklist-item{display:flex;align-items:flex-start;gap:9px;padding:7px 0;border-bottom:1px solid #f8fafc}
+.checklist-item input{margin-top:2px;accent-color:var(--primary-light)}
+.checklist-item label{font-size:13px;cursor:pointer}
+.alert-box{padding:10px 13px;border-radius:var(--r);font-size:12px;display:flex;gap:9px;align-items:flex-start;margin-bottom:10px;line-height:1.5}
+.alert-warn{background:#fffbeb;border:1px solid #fcd34d;color:#92400e}
+.alert-danger{background:#fef2f2;border:1px solid #fca5a5;color:#991b1b}
+.alert-info{background:#eff6ff;border:1px solid #93c5fd;color:#1e40af}
+.alert-success{background:#f0fdf4;border:1px solid #86efac;color:#166534}
+.action-btns{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:12px}
+.action-btn{padding:10px;border-radius:var(--r);border:2px solid var(--border);background:#fff;cursor:pointer;text-align:center;font-size:12px;font-weight:600;transition:.2s;font-family:inherit;color:var(--text-2)}
+.action-btn:hover{border-color:var(--primary-light);background:#eff6ff;color:var(--primary-light)}
+.action-btn.selected-pass{border-color:#22c55e;background:#f0fdf4;color:#166534}
+.action-btn.selected-fail{border-color:var(--red);background:#fef2f2;color:#991b1b}
+.action-btn.selected-special{border-color:var(--orange);background:#fff7ed;color:#c2410c}
+
+/* ── Defect Chips ── */
+.chip-wrap{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px}
+.chip{padding:6px 13px;border:2px solid var(--border);border-radius:20px;font-size:12px;cursor:pointer;transition:.2s;background:#fff;user-select:none;font-family:inherit}
+.chip:hover{border-color:var(--primary-light);background:#eff6ff}
+.chip.selected{border-color:var(--primary-light);background:var(--primary-light);color:#fff}
+.chip.sel-red{border-color:var(--red);background:var(--red);color:#fff}
+
+/* ── Photo Upload ── */
+.photo-area{border:2px dashed var(--border);border-radius:var(--r-lg);padding:28px;text-align:center;cursor:pointer;transition:.2s}
+.photo-area:hover{border-color:var(--primary-light);background:#eff6ff}
+.photo-previews{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.photo-thumb{width:70px;height:70px;border-radius:var(--r);object-fit:cover;border:1px solid var(--border)}
+
+/* ── Timeline ── */
+.timeline{position:relative;padding-left:22px}
+.timeline::before{content:'';position:absolute;left:6px;top:8px;bottom:0;width:2px;background:var(--border)}
+.tl-item{position:relative;padding-bottom:18px}
+.tl-dot{position:absolute;left:-19px;top:4px;width:14px;height:14px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 2px var(--border)}
+.tl-dot.fail{background:var(--red);box-shadow:0 0 0 2px var(--red)}
+.tl-dot.pass{background:#22c55e;box-shadow:0 0 0 2px #22c55e}
+.tl-dot.special{background:var(--orange);box-shadow:0 0 0 2px var(--orange)}
+.tl-date{font-size:11px;color:var(--text-3);margin-bottom:4px}
+.tl-card{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:11px 13px;font-size:13px}
+.tl-card h4{font-size:13px;font-weight:600;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between}
+.tl-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
+.tl-tag{background:#f1f5f9;padding:2px 8px;border-radius:10px;font-size:11px;color:var(--text-2)}
+.tl-tag.red{background:#fee2e2;color:#991b1b}
+
+/* ── Chart containers ── */
+.chart-wrap{position:relative;height:200px}
+.chart-wrap-sm{position:relative;height:160px}
+.chart-wrap-lg{position:relative;height:260px}
+
+/* ── Progress ── */
+.progress-bg{background:#f1f5f9;border-radius:4px;height:7px;overflow:hidden}
+.progress-fill{height:100%;border-radius:4px;transition:width .5s}
+
+/* ── Modal ── */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center}
+.overlay.show{display:flex}
+.modal{background:#fff;border-radius:var(--r-lg);padding:24px;width:95%;max-width:620px;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-lg)}
+.modal-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.modal-title{font-size:15px;font-weight:700}
+.modal-close{width:28px;height:28px;border-radius:50%;border:none;background:#f1f5f9;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--text-2)}
+
+/* ── Toast ── */
+.toast-wrap{position:fixed;top:18px;right:18px;z-index:999;display:flex;flex-direction:column;gap:8px}
+.toast{background:#fff;border-radius:var(--r);padding:12px 16px;box-shadow:var(--shadow-lg);font-size:13px;display:flex;align-items:center;gap:9px;min-width:270px;animation:fadeIn .3s ease}
+@keyframes fadeIn{from{transform:translateX(60px);opacity:0}to{transform:translateX(0);opacity:1}}
+.toast.success{border-left:4px solid #22c55e}
+.toast.error{border-left:4px solid var(--red)}
+.toast.warning{border-left:4px solid var(--orange)}
+.toast.info{border-left:4px solid var(--blue)}
+
+/* ── Empty state ── */
+.empty{text-align:center;padding:48px 24px;color:var(--text-3)}
+.empty i{font-size:40px;opacity:.25;margin-bottom:12px;display:block}
+.empty p{font-size:13px}
+
+/* ── Report Preview ── */
+.report-preview{background:#f8fafc;border:1px solid var(--border);border-radius:var(--r-lg);padding:28px;min-height:400px}
+.rp-header{text-align:center;margin-bottom:24px}
+.rp-header h2{font-size:18px;font-weight:700;margin-bottom:4px}
+.rp-header p{font-size:12px;color:var(--text-2)}
+.rp-section{margin-bottom:20px}
+.rp-section h3{font-size:13px;font-weight:700;border-bottom:2px solid var(--primary-light);padding-bottom:6px;margin-bottom:10px;color:var(--primary)}
+
+/* ── Misc ── */
+.divider{height:1px;background:var(--border);margin:14px 0}
+.tag-cloud{display:flex;flex-wrap:wrap;gap:6px}
+.part-no{font-family:monospace;font-weight:600;letter-spacing:.03em;color:var(--primary-light)}
+.lot-badge{background:#f1f5f9;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600;color:var(--text-2)}
+.rate-chip{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700}
+.rate-high{background:#fee2e2;color:#991b1b}
+.rate-mid{background:#fff7ed;color:#c2410c}
+.rate-low{background:#fef9c3;color:#a16207}
+.rate-ok{background:#dcfce7;color:#15803d}
+.grade-circle{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;font-size:12px;font-weight:700}
+.hover-row{cursor:pointer}
+.section-title{font-size:13px;font-weight:700;color:var(--text-2);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.section-title::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* ── Responsive ── */
+@media(max-width:1280px){.grid4{grid-template-columns:1fr 1fr}}
+@media(max-width:1100px){.insp-layout{grid-template-columns:1fr}}
+@media(max-width:900px){.grid3{grid-template-columns:1fr 1fr}.sidebar{width:60px}.s-logo-text,.nav-item span,.s-section,.s-user-info{display:none}.main{margin-left:60px}}
+@media(max-width:640px){.grid2{grid-template-columns:1fr}.grid4{grid-template-columns:1fr 1fr}.stats-row{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+
+<!-- ====== SIDEBAR ====== -->
+<nav class="sidebar">
+  <div class="s-logo">
+    <div class="s-logo-icon"><i class="fa-solid fa-shield-halved"></i></div>
+    <div class="s-logo-text">부품 불량 이력<small>Quality Management System</small></div>
+  </div>
+  <div class="s-menu">
+    <div class="s-section">메인</div>
+    <div class="nav-item active" onclick="navigate('dashboard')"><i class="fa-solid fa-chart-line"></i><span>대시보드</span></div>
+    <div class="s-section">검사</div>
+    <div class="nav-item" onclick="navigate('inspection')"><i class="fa-solid fa-magnifying-glass"></i><span>입고 검사</span><span class="nav-badge" id="badge-insp">3</span></div>
+    <div class="nav-item" onclick="navigate('defect-reg')"><i class="fa-solid fa-triangle-exclamation"></i><span>불량 등록</span></div>
+    <div class="s-section">분석</div>
+    <div class="nav-item" onclick="navigate('history')"><i class="fa-solid fa-clock-rotate-left"></i><span>부품 이력 조회</span></div>
+    <div class="nav-item" onclick="navigate('reports')"><i class="fa-solid fa-file-chart-column"></i><span>부적합 리포트</span></div>
+    <div class="s-section">설정</div>
+    <div class="nav-item" onclick="navigate('admin')"><i class="fa-solid fa-gear"></i><span>관리</span></div>
+  </div>
+  <div class="s-footer">
+    <div class="s-user">
+      <div class="s-user-avatar">김</div>
+      <div class="s-user-info">
+        <div class="s-user-name">김민수</div>
+        <div class="s-user-role">입고 검사자</div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- ====== MAIN ====== -->
+<div class="main">
+  <!-- Topbar -->
+  <header class="topbar">
+    <div class="tb-left">
+      <div class="page-title" id="page-title">대시보드</div>
+      <div class="breadcrumb" id="breadcrumb"><i class="fa-solid fa-house" style="font-size:10px"></i></div>
+    </div>
+    <div class="tb-right">
+      <div class="tb-date" id="tb-date"></div>
+      <div class="tb-btn" title="알림"><i class="fa-regular fa-bell"></i><span class="dot"></span></div>
+      <div class="tb-btn" title="프로필"><i class="fa-regular fa-user"></i></div>
+    </div>
+  </header>
+
+  <div class="page-wrap">
+
+    <!-- ============================================================ -->
+    <!-- PAGE: Dashboard                                              -->
+    <!-- ============================================================ -->
+    <div class="page active" id="page-dashboard">
+      <!-- Stats -->
+      <div class="grid4 mb20" id="dash-stats">
+        <div class="stat-card">
+          <div class="stat-icon si-blue"><i class="fa-solid fa-truck-ramp-box"></i></div>
+          <div><div class="stat-val" id="ds-incoming">0</div><div class="stat-lbl">오늘 입고 건수</div><div class="stat-change change-dn">전일 대비 ▼ 1건</div></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon si-red"><i class="fa-solid fa-circle-xmark"></i></div>
+          <div><div class="stat-val" id="ds-defect">0</div><div class="stat-lbl">이번 주 불량 건수</div><div class="stat-change change-up">전주 대비 ▲ 2건</div></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon si-orange"><i class="fa-solid fa-radiation"></i></div>
+          <div><div class="stat-val" id="ds-warn">0</div><div class="stat-lbl">경고 등급 부품 (D)</div><div class="stat-change change-up text-orange">즉시 조치 필요</div></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon si-green"><i class="fa-solid fa-percent"></i></div>
+          <div><div class="stat-val" id="ds-rate">0%</div><div class="stat-lbl">이번 달 불량률</div><div class="stat-change change-dn">전월 대비 ▼ 0.4%</div></div>
+        </div>
+      </div>
+
+      <div class="grid2 mb20">
+        <!-- Weekly trend -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><i class="fa-solid fa-chart-area"></i> 주간 불량 발생 추이</div>
+            <span class="badge badge-info">이번 주</span>
+          </div>
+          <div class="chart-wrap"><canvas id="chart-weekly"></canvas></div>
+        </div>
+        <!-- Top 5 defective -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><i class="fa-solid fa-ranking-star"></i> 불량 다발 부품 TOP 5</div>
+            <span class="badge badge-warn">이번 달 기준</span>
+          </div>
+          <div class="chart-wrap-sm"><canvas id="chart-top5"></canvas></div>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <!-- Recent inspections -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><i class="fa-solid fa-list-check"></i> 최근 입고 검사</div>
+            <button class="btn btn-outline btn-sm" onclick="navigate('inspection')">검사 등록 →</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>부품번호</th><th>부품명</th><th>입고일</th><th>결과</th><th>불량률</th></tr></thead>
+              <tbody id="dash-recent-table"></tbody>
+            </table>
+          </div>
+        </div>
+        <!-- Warning parts -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><i class="fa-solid fa-circle-radiation text-red"></i> 경고 등급 부품 알림</div>
+          </div>
+          <div id="dash-warn-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- PAGE: Incoming Inspection                                    -->
+    <!-- ============================================================ -->
+    <div class="page" id="page-inspection">
+      <div class="insp-layout">
+        <!-- Left: Form -->
+        <div>
+          <div class="card mb16">
+            <div class="card-header">
+              <div class="card-title"><i class="fa-solid fa-barcode"></i> 부품 번호 입력</div>
+              <span class="text-xs text-muted">바코드 스캔 또는 직접 입력</span>
+            </div>
+            <div class="input-group">
+              <input class="form-input large" id="insp-partno" placeholder="부품번호 입력 (예: P-20341)" oninput="onPartNoInput(this.value)" onkeydown="if(event.key==='Enter')lookupPart(this.value)" autocomplete="off">
+              <button class="btn btn-primary" onclick="lookupPart(document.getElementById('insp-partno').value)"><i class="fa-solid fa-magnifying-glass"></i> 조회</button>
+            </div>
+            <!-- Quick select buttons -->
+            <div class="flex-center gap8 mt" style="margin-top:10px;flex-wrap:wrap">
+              <span class="text-xs text-muted">빠른 선택:</span>
+              <button class="btn btn-outline btn-sm" onclick="quickSelect('P-20341')">P-20341</button>
+              <button class="btn btn-outline btn-sm" onclick="quickSelect('P-40089')">P-40089</button>
+              <button class="btn btn-outline btn-sm" onclick="quickSelect('P-30156')">P-30156</button>
+              <button class="btn btn-outline btn-sm" onclick="quickSelect('P-10022')">P-10022</button>
+              <button class="btn btn-outline btn-sm" onclick="quickSelect('P-99999')">P-99999 (신규)</button>
+            </div>
+          </div>
+
+          <!-- Part info (hidden until lookup) -->
+          <div class="card mb16" id="insp-part-info" style="display:none">
+            <div class="flex-between mb12">
+              <div>
+                <div class="flex-center gap8 mb8">
+                  <span class="part-no" id="inf-partno"></span>
+                  <span class="badge" id="inf-grade"></span>
+                </div>
+                <div style="font-size:16px;font-weight:700" id="inf-partname"></div>
+                <div class="text-sm text-secondary mt" style="margin-top:3px"><i class="fa-regular fa-building"></i> <span id="inf-supplier"></span> &nbsp;·&nbsp; <span id="inf-category"></span></div>
+              </div>
+              <button class="btn btn-ghost btn-sm" onclick="clearPart()"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+          </div>
+
+          <!-- Inspection form (hidden until lookup) -->
+          <div class="card mb16" id="insp-form" style="display:none">
+            <div class="card-title mb16"><i class="fa-solid fa-clipboard-list"></i> 검사 정보 입력</div>
+            <div class="grid2">
+              <div class="form-group">
+                <label class="form-label">입고 차수</label>
+                <input class="form-input" id="inf-lot" placeholder="예: 27차">
+              </div>
+              <div class="form-group">
+                <label class="form-label">입고일</label>
+                <input class="form-input" type="date" id="inf-date">
+              </div>
+              <div class="form-group">
+                <label class="form-label">입고 수량</label>
+                <input class="form-input" type="number" id="inf-inqty" placeholder="0">
+              </div>
+              <div class="form-group">
+                <label class="form-label">검사 수량</label>
+                <input class="form-input" type="number" id="inf-inspqty" placeholder="0">
+              </div>
+            </div>
+            <div class="divider"></div>
+            <div class="card-title mb12"><i class="fa-solid fa-check-double"></i> 검사 결과</div>
+            <div class="action-btns">
+              <button class="action-btn" id="btn-pass" onclick="selectResult('pass')"><i class="fa-solid fa-circle-check text-green"></i><br>합격</button>
+              <button class="action-btn" id="btn-fail" onclick="selectResult('fail')"><i class="fa-solid fa-circle-xmark text-red"></i><br>불합격</button>
+              <button class="action-btn" id="btn-special" onclick="selectResult('special')"><i class="fa-solid fa-circle-exclamation text-orange"></i><br>특채</button>
+            </div>
+
+            <!-- Defect section (shown on fail) -->
+            <div id="fail-section" style="display:none;margin-top:16px">
+              <div class="divider"></div>
+              <div class="card-title mb8"><i class="fa-solid fa-bug"></i> 불량 유형 선택 (다중 가능)</div>
+              <div class="chip-wrap" id="defect-chips"></div>
+              <div class="form-group" style="margin-top:14px">
+                <label class="form-label">불량 수량</label>
+                <input class="form-input" type="number" id="inf-defqty" placeholder="0">
+              </div>
+              <div class="form-group">
+                <label class="form-label">불량 상세 내용</label>
+                <textarea class="form-textarea" id="inf-notes" placeholder="불량 발생 내용, 위치, 추정 원인 등 상세 기술..."></textarea>
+              </div>
+              <div class="form-group">
+                <label class="form-label">조치 내용</label>
+                <select class="form-select" id="inf-action">
+                  <option value="">조치 선택</option>
+                  <option value="선별 후 사용">선별 후 사용</option>
+                  <option value="전량 반품">전량 반품</option>
+                  <option value="특채">특채</option>
+                  <option value="폐기">폐기</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">사진 첨부</label>
+                <div class="photo-area" onclick="document.getElementById('photo-input').click()">
+                  <i class="fa-regular fa-image text-muted" style="font-size:28px;margin-bottom:8px;display:block"></i>
+                  <div class="text-sm text-muted">클릭하여 사진 추가 (최대 10장)</div>
+                  <input type="file" id="photo-input" multiple accept="image/*" style="display:none" onchange="previewPhotos(this)">
+                </div>
+                <div class="photo-previews" id="photo-previews"></div>
+              </div>
+            </div>
+
+            <button class="btn btn-primary w100" style="margin-top:8px" onclick="submitInspection()"><i class="fa-solid fa-floppy-disk"></i> 검사 결과 저장</button>
+          </div>
+        </div>
+
+        <!-- Right: History Panel -->
+        <div id="history-panel-wrap">
+          <div class="history-panel" id="hp-empty">
+            <div class="hp-header" style="background:linear-gradient(135deg,#334155,#475569)">
+              <h3><i class="fa-solid fa-circle-info"></i> 불량 이력 패널</h3>
+              <div class="hp-sub">부품번호를 입력하면 자동으로 이력이 표시됩니다</div>
+            </div>
+            <div class="empty" style="padding:40px 20px">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <p>부품번호를 입력하여<br>불량 이력을 확인하세요</p>
+            </div>
+          </div>
+          <div class="history-panel" id="hp-result" style="display:none">
+            <div class="hp-header" id="hp-result-header">
+              <h3 id="hp-title"></h3>
+              <div class="hp-sub" id="hp-subtitle"></div>
+            </div>
+            <div class="hp-body">
+              <div id="hp-alert-box"></div>
+              <div class="hp-summary">
+                <div class="hp-stat"><div class="hp-stat-val" id="hp-total"></div><div class="hp-stat-lbl">총 차수</div></div>
+                <div class="hp-stat"><div class="hp-stat-val text-red" id="hp-fail"></div><div class="hp-stat-lbl">불량 차수</div></div>
+                <div class="hp-stat"><div class="hp-stat-val" id="hp-rate"></div><div class="hp-stat-lbl">평균 불량률</div></div>
+              </div>
+              <div class="hp-section-label"><i class="fa-solid fa-chart-bar"></i> 주요 불량 유형</div>
+              <div id="hp-freq-list"></div>
+              <div class="hp-section-label"><i class="fa-solid fa-list-check"></i> 유의 검사 체크리스트</div>
+              <div id="hp-checklist"></div>
+              <div class="divider"></div>
+              <button class="btn btn-outline btn-sm w100" onclick="openHistoryModal(currentPartNo)"><i class="fa-solid fa-clock-rotate-left"></i> 상세 이력 보기</button>
+            </div>
+          </div>
+          <div class="history-panel" id="hp-none" style="display:none">
+            <div class="hp-header ok">
+              <h3><i class="fa-solid fa-circle-check"></i> 이력 없음</h3>
+              <div class="hp-sub" id="hp-none-sub"></div>
+            </div>
+            <div class="hp-body">
+              <div class="alert-box alert-success"><i class="fa-solid fa-circle-check"></i><div>이 부품에 대한 불량 이력이 없습니다.<br>표준 검사 절차를 적용하십시오.</div></div>
+              <div class="hp-section-label"><i class="fa-solid fa-list-check"></i> 표준 검사 체크리스트</div>
+              <div>
+                <div class="checklist-item"><input type="checkbox" id="sc1"><label for="sc1">외관 전반 검사 (스크래치, 변형, 오염)</label></div>
+                <div class="checklist-item"><input type="checkbox" id="sc2"><label for="sc2">주요 치수 측정 (도면 대비)</label></div>
+                <div class="checklist-item"><input type="checkbox" id="sc3"><label for="sc3">수량 확인</label></div>
+                <div class="checklist-item"><input type="checkbox" id="sc4"><label for="sc4">포장 상태 확인</label></div>
+                <div class="checklist-item"><input type="checkbox" id="sc5"><label for="sc5">로트 라벨 및 성적서 확인</label></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- PAGE: Defect Registration                                    -->
+    <!-- ============================================================ -->
+    <div class="page" id="page-defect-reg">
+      <div style="max-width:800px">
+        <div class="card mb16">
+          <div class="card-title mb16"><i class="fa-solid fa-truck-ramp-box"></i> 입고 정보</div>
+          <div class="grid2">
+            <div class="form-group">
+              <label class="form-label">부품번호 *</label>
+              <div class="input-group">
+                <input class="form-input" id="reg-partno" placeholder="P-XXXXX" oninput="regLookupPart(this.value)">
+                <button class="btn btn-outline btn-sm" onclick="regLookupPart(document.getElementById('reg-partno').value)"><i class="fa-solid fa-magnifying-glass"></i></button>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">부품명</label>
+              <input class="form-input" id="reg-partname" readonly placeholder="자동 입력">
+            </div>
+            <div class="form-group">
+              <label class="form-label">공급사</label>
+              <input class="form-input" id="reg-supplier" readonly placeholder="자동 입력">
+            </div>
+            <div class="form-group">
+              <label class="form-label">입고 차수 *</label>
+              <input class="form-input" id="reg-lot" placeholder="예: 27차">
+            </div>
+            <div class="form-group">
+              <label class="form-label">입고일 *</label>
+              <input class="form-input" type="date" id="reg-date">
+            </div>
+            <div class="form-group">
+              <label class="form-label">입고 수량</label>
+              <input class="form-input" type="number" id="reg-inqty" placeholder="0">
+            </div>
+            <div class="form-group">
+              <label class="form-label">검사 수량</label>
+              <input class="form-input" type="number" id="reg-inspqty" placeholder="0">
+            </div>
+            <div class="form-group">
+              <label class="form-label">불량 수량 *</label>
+              <input class="form-input" type="number" id="reg-defqty" placeholder="0">
+            </div>
+          </div>
+        </div>
+        <div class="card mb16">
+          <div class="card-title mb12"><i class="fa-solid fa-tags"></i> 불량 유형 선택 *</div>
+          <div class="chip-wrap" id="reg-chips"></div>
+        </div>
+        <div class="card mb16">
+          <div class="card-title mb12"><i class="fa-solid fa-file-lines"></i> 불량 상세 기술서</div>
+          <div class="form-group">
+            <label class="form-label">부적합 내용</label>
+            <textarea class="form-textarea" id="reg-desc" style="min-height:120px" placeholder="불량 발생 위치, 현상, 추정 원인 등 상세히 기술하세요..."></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">조치 내용 *</label>
+            <div class="chip-wrap">
+              <button class="chip" id="rc-1" onclick="selectAction('전량 반품','rc-1')">전량 반품</button>
+              <button class="chip" id="rc-2" onclick="selectAction('선별 후 사용','rc-2')">선별 후 사용</button>
+              <button class="chip" id="rc-3" onclick="selectAction('특채','rc-3')">특채</button>
+              <button class="chip" id="rc-4" onclick="selectAction('폐기','rc-4')">폐기</button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">사진 첨부 (최대 10장)</label>
+            <div class="photo-area" onclick="document.getElementById('reg-photo-input').click()">
+              <i class="fa-regular fa-images text-muted" style="font-size:30px;margin-bottom:8px;display:block"></i>
+              <div class="text-sm text-muted">클릭하여 사진 첨부</div>
+              <input type="file" id="reg-photo-input" multiple accept="image/*" style="display:none" onchange="regPreviewPhotos(this)">
+            </div>
+            <div class="photo-previews" id="reg-photo-previews"></div>
+          </div>
+        </div>
+        <div class="flex gap8">
+          <button class="btn btn-outline flex-1" onclick="clearRegForm()"><i class="fa-solid fa-rotate-left"></i> 초기화</button>
+          <button class="btn btn-primary" style="flex:2" onclick="submitDefectReg()"><i class="fa-solid fa-floppy-disk"></i> 불량 데이터 저장</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- PAGE: History                                                -->
+    <!-- ============================================================ -->
+    <div class="page" id="page-history">
+      <div class="card mb16">
+        <div class="flex gap12 flex-wrap">
+          <div class="input-icon" style="flex:1;min-width:200px">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input class="form-input" id="hist-search" placeholder="부품번호 또는 부품명으로 검색..." oninput="filterHistory(this.value)">
+          </div>
+          <select class="form-select" style="width:140px" id="hist-supplier" onchange="filterHistory(document.getElementById('hist-search').value)">
+            <option value="">전체 공급사</option>
+          </select>
+          <select class="form-select" style="width:120px" id="hist-grade" onchange="filterHistory(document.getElementById('hist-search').value)">
+            <option value="">전체 등급</option>
+            <option>A</option><option>B</option><option>C</option><option>D</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="grid2" id="hist-part-cards" style="margin-bottom:20px"></div>
+
+      <!-- Detail panel (shown on part click) -->
+      <div id="hist-detail" style="display:none">
+        <div class="section-title" id="hist-detail-title">부품 상세 이력</div>
+        <div class="grid2 mb20">
+          <div class="card">
+            <div class="card-header"><div class="card-title"><i class="fa-solid fa-chart-line"></i> 차수별 불량률 추이</div></div>
+            <div class="chart-wrap"><canvas id="chart-rate-trend"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title"><i class="fa-solid fa-chart-bar"></i> 불량 유형별 발생 빈도</div></div>
+            <div class="chart-wrap"><canvas id="chart-defect-type"></canvas></div>
+          </div>
+        </div>
+        <div class="grid2">
+          <div class="card">
+            <div class="card-header"><div class="card-title"><i class="fa-solid fa-timeline"></i> 검사 이력 타임라인</div></div>
+            <div id="hist-timeline"></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title"><i class="fa-solid fa-table-list"></i> 차수별 검사 데이터</div></div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>차수</th><th>입고일</th><th>검사수</th><th>불량수</th><th>불량률</th><th>결과</th></tr></thead>
+                <tbody id="hist-table-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- PAGE: Reports                                                -->
+    <!-- ============================================================ -->
+    <div class="page" id="page-reports">
+      <div class="grid2" style="align-items:start">
+        <div>
+          <div class="card mb16">
+            <div class="card-title mb16"><i class="fa-solid fa-sliders"></i> 리포트 조건 설정</div>
+            <div class="form-group">
+              <label class="form-label">리포트 유형</label>
+              <select class="form-select" id="rp-type">
+                <option>부품별 부적합 현황 리포트</option>
+                <option>공급사별 불량 현황 리포트</option>
+                <option>불량 유형별 분석 리포트</option>
+                <option>월간 품질 현황 리포트</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">기간</label>
+              <div class="flex gap8">
+                <input class="form-input" type="date" id="rp-start" value="2026-01-01">
+                <span class="flex-center text-muted">~</span>
+                <input class="form-input" type="date" id="rp-end" value="2026-05-13">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">부품 선택</label>
+              <select class="form-select" id="rp-part">
+                <option value="">전체 부품</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">불량 유형 필터</label>
+              <div class="chip-wrap" id="rp-defect-filter">
+                <button class="chip selected" onclick="toggleRpChip(this)">전체</button>
+                <button class="chip" onclick="toggleRpChip(this)">치수 불량</button>
+                <button class="chip" onclick="toggleRpChip(this)">외관 불량</button>
+                <button class="chip" onclick="toggleRpChip(this)">기능 불량</button>
+                <button class="chip" onclick="toggleRpChip(this)">재질 불량</button>
+                <button class="chip" onclick="toggleRpChip(this)">표면처리 불량</button>
+                <button class="chip" onclick="toggleRpChip(this)">포장 불량</button>
+              </div>
+            </div>
+            <div class="flex gap8">
+              <button class="btn btn-primary flex-1" onclick="generateReport()"><i class="fa-solid fa-eye"></i> 미리보기</button>
+            </div>
+            <div class="divider"></div>
+            <div class="flex gap8">
+              <button class="btn btn-outline flex-1" onclick="showToast('PDF 생성 중...','info');setTimeout(()=>showToast('리포트.pdf 다운로드 완료','success'),1500)">
+                <i class="fa-solid fa-file-pdf text-red"></i> PDF 출력
+              </button>
+              <button class="btn btn-outline flex-1" onclick="showToast('엑셀 생성 중...','info');setTimeout(()=>showToast('리포트.xlsx 다운로드 완료','success'),1200)">
+                <i class="fa-solid fa-file-excel" style="color:#16a34a"></i> 엑셀 출력
+              </button>
+            </div>
+          </div>
+        </div>
+        <!-- Preview -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><i class="fa-regular fa-file-lines"></i> 리포트 미리보기</div>
+            <span class="badge badge-gray text-xs">A4 형식</span>
+          </div>
+          <div class="report-preview" id="report-preview">
+            <div class="empty" style="padding:60px 20px">
+              <i class="fa-regular fa-file-lines"></i>
+              <p>조건 설정 후 미리보기를 클릭하세요</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- PAGE: Admin                                                  -->
+    <!-- ============================================================ -->
+    <div class="page" id="page-admin">
+      <div class="tabs">
+        <div class="tab active" onclick="adminTab('parts',this)">부품 마스터</div>
+        <div class="tab" onclick="adminTab('defect-codes',this)">불량 유형 코드</div>
+        <div class="tab" onclick="adminTab('users',this)">사용자 관리</div>
+        <div class="tab" onclick="adminTab('thresholds',this)">임계값 설정</div>
+      </div>
+
+      <!-- Parts master tab -->
+      <div id="tab-parts">
+        <div class="flex-between mb16">
+          <div class="input-icon" style="width:280px">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input class="form-input" placeholder="부품 검색..." oninput="filterAdminParts(this.value)">
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="showAddPartModal()"><i class="fa-solid fa-plus"></i> 부품 추가</button>
+        </div>
+        <div class="card">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>부품번호</th><th>부품명</th><th>공급사</th><th>분류</th><th>등급</th><th>최근 입고</th><th>관리</th></tr></thead>
+              <tbody id="admin-parts-table"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Defect codes tab -->
+      <div id="tab-defect-codes" style="display:none">
+        <div class="flex-between mb16">
+          <div class="card-title"><i class="fa-solid fa-tags"></i> 불량 유형 코드 관리</div>
+          <button class="btn btn-primary btn-sm"><i class="fa-solid fa-plus"></i> 코드 추가</button>
+        </div>
+        <div class="card">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>코드</th><th>불량 유형명</th><th>분류</th><th>사용 횟수</th><th>상태</th></tr></thead>
+              <tbody id="admin-codes-table"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Users tab -->
+      <div id="tab-users" style="display:none">
+        <div class="card">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>이름</th><th>역할</th><th>이메일</th><th>최근 로그인</th><th>상태</th></tr></thead>
+              <tbody>
+                <tr><td>김민수</td><td><span class="badge badge-info">입고 검사자</span></td><td>mskim@company.com</td><td>2026-05-13</td><td><span class="badge badge-pass">활성</span></td></tr>
+                <tr><td>이영희</td><td><span class="badge badge-warn">품질 관리자</span></td><td>yhlee@company.com</td><td>2026-05-12</td><td><span class="badge badge-pass">활성</span></td></tr>
+                <tr><td>박정훈</td><td><span class="badge badge-info">입고 검사자</span></td><td>jhpark@company.com</td><td>2026-05-10</td><td><span class="badge badge-pass">활성</span></td></tr>
+                <tr><td>최수진</td><td><span class="badge badge-gray">구매/조달</span></td><td>sjchoi@company.com</td><td>2026-05-08</td><td><span class="badge badge-pass">활성</span></td></tr>
+                <tr><td>관리자</td><td><span class="badge badge-fail">시스템 관리자</span></td><td>admin@company.com</td><td>2026-05-13</td><td><span class="badge badge-pass">활성</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Thresholds tab -->
+      <div id="tab-thresholds" style="display:none">
+        <div style="max-width:600px">
+          <div class="card mb16">
+            <div class="card-title mb16"><i class="fa-solid fa-sliders"></i> 등급 산정 기준 (불량률)</div>
+            <div class="form-group"><label class="form-label">A 등급 (우수) 불량률</label><div class="input-group"><input class="form-input" value="1.0" type="number" step="0.1"><span class="flex-center text-muted" style="padding:0 8px">% 미만</span></div></div>
+            <div class="form-group"><label class="form-label">B 등급 (양호) 불량률</label><div class="input-group"><input class="form-input" value="3.0" type="number" step="0.1"><span class="flex-center text-muted" style="padding:0 8px">% 미만</span></div></div>
+            <div class="form-group"><label class="form-label">C 등급 (주의) 불량률</label><div class="input-group"><input class="form-input" value="5.0" type="number" step="0.1"><span class="flex-center text-muted" style="padding:0 8px">% 미만</span></div></div>
+            <div class="form-group"><label class="form-label">D 등급 (위험) 불량률</label><div class="input-group"><input class="form-input" value="5.0" type="number" step="0.1"><span class="flex-center text-muted" style="padding:0 8px">% 이상</span></div></div>
+          </div>
+          <div class="card mb16">
+            <div class="card-title mb16"><i class="fa-solid fa-bell"></i> 경고 알림 기준</div>
+            <div class="form-group"><label class="form-label">반복 불량 경고 임계값</label><div class="input-group"><input class="form-input" value="3" type="number"><span class="flex-center text-muted" style="padding:0 8px">차수 연속 불량 발생 시 경고</span></div></div>
+            <div class="form-group"><label class="form-label">불량률 급등 경고 기준</label><div class="input-group"><input class="form-input" value="50" type="number"><span class="flex-center text-muted" style="padding:0 8px">% 이상 증가 시 알림</span></div></div>
+          </div>
+          <button class="btn btn-primary" onclick="showToast('설정이 저장되었습니다','success')"><i class="fa-solid fa-floppy-disk"></i> 설정 저장</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /page-wrap -->
+</div><!-- /main -->
+
+<!-- ====== MODAL: Detailed History ====== -->
+<div class="overlay" id="overlay-history">
+  <div class="modal" style="max-width:700px">
+    <div class="modal-hdr">
+      <div class="modal-title" id="modal-hist-title">상세 이력</div>
+      <button class="modal-close" onclick="closeModal('overlay-history')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div id="modal-hist-body"></div>
+  </div>
+</div>
+
+<!-- ====== MODAL: Add Part ====== -->
+<div class="overlay" id="overlay-add-part">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div class="modal-title">부품 추가</div>
+      <button class="modal-close" onclick="closeModal('overlay-add-part')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="form-group"><label class="form-label">부품번호 *</label><input class="form-input" id="ap-partno" placeholder="P-XXXXX"></div>
+    <div class="form-group"><label class="form-label">부품명 *</label><input class="form-input" id="ap-partname"></div>
+    <div class="form-group"><label class="form-label">공급사 *</label><input class="form-input" id="ap-supplier"></div>
+    <div class="form-group"><label class="form-label">분류 카테고리</label>
+      <select class="form-select" id="ap-category">
+        <option>구조부품</option><option>체결부품</option><option>밀봉부품</option><option>전장부품</option><option>회전부품</option><option>외장부품</option><option>기타</option>
+      </select>
+    </div>
+    <div class="flex gap8" style="margin-top:16px">
+      <button class="btn btn-outline flex-1" onclick="closeModal('overlay-add-part')">취소</button>
+      <button class="btn btn-primary flex-1" onclick="addPart()"><i class="fa-solid fa-plus"></i> 추가</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====== TOASTS ====== -->
+<div class="toast-wrap" id="toast-wrap"></div>
+
+<!-- ====================================================== -->
+<!-- JAVASCRIPT                                             -->
+<!-- ====================================================== -->
+<script>
+// ── Mock Data ──────────────────────────────────────────────────────────
+const DB = {
+  parts: [
+    {id:1, partNo:'P-20341', partName:'브라켓 A형',    supplier:'OO정밀',      category:'구조부품',  grade:'C', lastIn:'2026-04-12'},
+    {id:2, partNo:'P-10022', partName:'볼트 M8x30',    supplier:'한국파스너',   category:'체결부품',  grade:'A', lastIn:'2026-04-28'},
+    {id:3, partNo:'P-30156', partName:'실리콘 패킹',   supplier:'화인고무',     category:'밀봉부품',  grade:'B', lastIn:'2026-04-25'},
+    {id:4, partNo:'P-40089', partName:'모터 브라켓',   supplier:'KM산업',       category:'구조부품',  grade:'D', lastIn:'2026-04-20'},
+    {id:5, partNo:'P-50203', partName:'커넥터 10핀',   supplier:'성우전자',     category:'전장부품',  grade:'A', lastIn:'2026-05-02'},
+    {id:6, partNo:'P-60118', partName:'고무 그로멧',   supplier:'화인고무',     category:'밀봉부품',  grade:'B', lastIn:'2026-04-15'},
+    {id:7, partNo:'P-70234', partName:'스틸 샤프트',   supplier:'대성금속',     category:'회전부품',  grade:'C', lastIn:'2026-04-10'},
+    {id:8, partNo:'P-80045', partName:'플라스틱 커버', supplier:'신흥플라스틱', category:'외장부품',  grade:'B', lastIn:'2026-05-01'},
+  ],
+  inspections: {
+    'P-20341':[
+      {lot:'26차',date:'2026-04-12',inQty:500,inspQty:100,defQty:12,rate:4.2,result:'fail',types:['외관(스크래치)','포장 불량'],action:'선별 후 사용',inspector:'김민수',notes:'표면 스크래치 다수 발견. 포장재 손상으로 인한 2차 불량 추정.'},
+      {lot:'25차',date:'2026-03-12',inQty:300,inspQty:60,defQty:8,rate:3.8,result:'fail',types:['외관(스크래치)','치수 불량'],action:'선별 후 사용',inspector:'박정훈',notes:'치수 공차 초과 2건, 스크래치 6건.'},
+      {lot:'24차',date:'2026-02-20',inQty:400,inspQty:80,defQty:3,rate:1.2,result:'fail',types:['외관(스크래치)'],action:'특채',inspector:'김민수',notes:'미세 스크래치 3건, 기능 영향 없음으로 특채.'},
+      {lot:'23차',date:'2026-01-15',inQty:500,inspQty:100,defQty:0,rate:0,result:'pass',types:[],action:'-',inspector:'이영희',notes:'이상 없음.'},
+      {lot:'22차',date:'2025-12-10',inQty:400,inspQty:80,defQty:5,rate:2.1,result:'fail',types:['포장 불량'],action:'선별 후 사용',inspector:'박정훈',notes:'포장 불량으로 인한 표면 오염.'},
+    ],
+    'P-40089':[
+      {lot:'15차',date:'2026-04-20',inQty:200,inspQty:40,defQty:18,rate:8.5,result:'fail',types:['치수 불량','기능 불량'],action:'전량 반품',inspector:'김민수',notes:'주요 치수 도면 대비 +0.3mm 초과. 조립 불가.'},
+      {lot:'14차',date:'2026-03-25',inQty:200,inspQty:40,defQty:14,rate:7.2,result:'fail',types:['치수 불량','재질 불량'],action:'전량 반품',inspector:'이영희',notes:'재질 경도 불충족. 치수 불량 병발.'},
+      {lot:'13차',date:'2026-02-28',inQty:300,inspQty:60,defQty:11,rate:5.5,result:'fail',types:['치수 불량'],action:'선별 후 사용',inspector:'박정훈',notes:''},
+      {lot:'12차',date:'2026-01-20',inQty:200,inspQty:40,defQty:9,rate:4.5,result:'fail',types:['치수 불량','외관 불량'],action:'선별 후 사용',inspector:'김민수',notes:''},
+      {lot:'11차',date:'2025-12-05',inQty:200,inspQty:40,defQty:4,rate:2.0,result:'fail',types:['외관 불량'],action:'특채',inspector:'이영희',notes:''},
+    ],
+    'P-30156':[
+      {lot:'31차',date:'2026-04-25',inQty:1000,inspQty:200,defQty:4,rate:0.8,result:'fail',types:['치수 불량'],action:'특채',inspector:'김민수',notes:''},
+      {lot:'30차',date:'2026-03-20',inQty:800,inspQty:160,defQty:2,rate:0.4,result:'fail',types:['외관 불량'],action:'특채',inspector:'박정훈',notes:''},
+      {lot:'29차',date:'2026-02-15',inQty:1000,inspQty:200,defQty:0,rate:0,result:'pass',types:[],action:'-',inspector:'이영희',notes:''},
+    ],
+    'P-10022':[
+      {lot:'52차',date:'2026-04-28',inQty:5000,inspQty:500,defQty:2,rate:0.1,result:'fail',types:['치수 불량'],action:'특채',inspector:'김민수',notes:''},
+      {lot:'51차',date:'2026-03-30',inQty:5000,inspQty:500,defQty:0,rate:0,result:'pass',types:[],action:'-',inspector:'박정훈',notes:''},
+    ],
+    'P-50203':[
+      {lot:'8차',date:'2026-05-02',inQty:300,inspQty:60,defQty:0,rate:0,result:'pass',types:[],action:'-',inspector:'김민수',notes:''},
+    ],
+  },
+  defectTypes:[
+    {code:'D001',name:'치수 불량',     category:'치수', count:24},
+    {code:'D002',name:'외관 불량',     category:'외관', count:18},
+    {code:'D003',name:'외관(스크래치)',category:'외관', count:31},
+    {code:'D004',name:'외관(변형)',    category:'외관', count:7},
+    {code:'D005',name:'기능 불량',     category:'기능', count:8},
+    {code:'D006',name:'재질 불량',     category:'재질', count:5},
+    {code:'D007',name:'표면처리 불량', category:'표면', count:3},
+    {code:'D008',name:'포장 불량',     category:'포장', count:12},
+    {code:'D009',name:'색상 불량',     category:'외관', count:2},
+    {code:'D010',name:'이물질 혼입',   category:'기타', count:4},
+    {code:'D011',name:'수량 부족',     category:'기타', count:1},
+    {code:'D012',name:'기타',          category:'기타', count:6},
+  ]
+};
+
+// ── State ──────────────────────────────────────────────────────────────
+let currentPage = 'dashboard';
+let currentPartNo = null;
+let selectedResult = null;
+let selectedDefectTypes = [];
+let selectedAction = null;
+let rateTrendChart = null, defectTypeChart = null;
+let weeklyChart = null, top5Chart = null;
+
+// ── Navigation ─────────────────────────────────────────────────────────
+function navigate(page){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>{
+    if(n.getAttribute('onclick')&&n.getAttribute('onclick').includes("'"+page+"'")) n.classList.add('active');
+  });
+  currentPage=page;
+  const titles={dashboard:'대시보드',inspection:'입고 검사',
+    'defect-reg':'불량 등록',history:'부품 이력 조회',reports:'부적합 리포트',admin:'관리'};
+  document.getElementById('page-title').textContent=titles[page]||page;
+  if(page==='dashboard') initDashboard();
+  if(page==='history') initHistory();
+  if(page==='defect-reg') initRegForm();
+  if(page==='admin') initAdmin();
+  if(page==='reports') initReports();
+}
+
+// ── Date ───────────────────────────────────────────────────────────────
+(function(){
+  const d=new Date(2026,4,13);
+  document.getElementById('tb-date').textContent=
+    d.toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric',weekday:'long'});
+  document.getElementById('inf-date').value='2026-05-13';
+  document.getElementById('reg-date').value='2026-05-13';
+})();
+
+// ── Dashboard ──────────────────────────────────────────────────────────
+function initDashboard(){
+  document.getElementById('ds-incoming').textContent='6';
+  document.getElementById('ds-defect').textContent='14';
+  document.getElementById('ds-warn').textContent='2';
+  document.getElementById('ds-rate').textContent='3.2%';
+
+  // Recent inspections table
+  const rows=[
+    {p:'P-40089',n:'모터 브라켓',  d:'2026-04-20',r:'fail',  rate:8.5},
+    {p:'P-20341',n:'브라켓 A형',   d:'2026-04-12',r:'fail',  rate:4.2},
+    {p:'P-50203',n:'커넥터 10핀',  d:'2026-05-02',r:'pass',  rate:0.0},
+    {p:'P-10022',n:'볼트 M8x30',   d:'2026-04-28',r:'fail',  rate:0.1},
+    {p:'P-30156',n:'실리콘 패킹',  d:'2026-04-25',r:'fail',  rate:0.8},
+  ];
+  const tb=document.getElementById('dash-recent-table');
+  tb.innerHTML=rows.map(r=>`
+    <tr class="hover-row" onclick="quickNav('${r.p}')">
+      <td><span class="part-no">${r.p}</span></td>
+      <td>${r.n}</td>
+      <td class="text-muted text-sm">${r.d}</td>
+      <td><span class="badge badge-${r.r}">${r.r==='pass'?'합격':'불합격'}</span></td>
+      <td><span class="rate-chip ${rateClass(r.rate)}">${r.rate.toFixed(1)}%</span></td>
+    </tr>`).join('');
+
+  // Warning parts
+  const warnParts=DB.parts.filter(p=>p.grade==='D'||p.grade==='C');
+  document.getElementById('dash-warn-list').innerHTML=warnParts.map(p=>`
+    <div class="flex-between" style="padding:10px 0;border-bottom:1px solid #f1f5f9">
+      <div>
+        <div class="flex-center gap8">
+          <span class="part-no" style="font-size:12px">${p.partNo}</span>
+          <span class="badge badge-${p.grade}">${p.grade}등급</span>
+          ${p.grade==='D'?'<span class="badge badge-fail">위험</span>':''}
+        </div>
+        <div class="text-sm" style="margin-top:2px">${p.partName} · ${p.supplier}</div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="quickNav('${p.partNo}')"><i class="fa-solid fa-chevron-right"></i></button>
+    </div>`).join('');
+
+  // Charts
+  setTimeout(()=>{
+    if(weeklyChart){weeklyChart.destroy();weeklyChart=null}
+    if(top5Chart){top5Chart.destroy();top5Chart=null}
+    const wCtx=document.getElementById('chart-weekly').getContext('2d');
+    weeklyChart=new Chart(wCtx,{type:'line',data:{
+      labels:['05/07','05/08','05/09','05/10','05/11','05/12','05/13'],
+      datasets:[
+        {label:'불량 건수',data:[2,4,1,3,5,2,4],borderColor:'#dc2626',backgroundColor:'rgba(220,38,38,.1)',tension:.4,fill:true,pointRadius:4},
+        {label:'입고 건수',data:[5,7,4,6,8,5,6],borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,.05)',tension:.4,fill:true,pointRadius:4}
+      ]
+    },options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{font:{size:11}}}},scales:{y:{beginAtZero:true,ticks:{font:{size:11}}}}}});
+
+    const t5Ctx=document.getElementById('chart-top5').getContext('2d');
+    top5Chart=new Chart(t5Ctx,{type:'bar',data:{
+      labels:['P-40089\n모터브라켓','P-20341\n브라켓A형','P-70234\n스틸샤프트','P-30156\n실리콘패킹','P-60118\n고무그로멧'],
+      datasets:[{label:'불량률 (%)',data:[7.2,4.2,3.1,0.8,0.5],backgroundColor:['#dc2626','#f97316','#eab308','#22c55e','#22c55e'],borderRadius:6}]
+    },options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,max:10,ticks:{font:{size:10},callback:v=>v+'%'}}}}});
+  },50);
+}
+
+function quickNav(partNo){navigate('history');setTimeout(()=>loadHistoryDetail(partNo),100)}
+
+// ── Inspection ─────────────────────────────────────────────────────────
+function quickSelect(v){
+  document.getElementById('insp-partno').value=v;
+  lookupPart(v);
+}
+
+function onPartNoInput(v){
+  if(v.length===0) clearPart();
+}
+
+function clearPart(){
+  currentPartNo=null; selectedResult=null; selectedDefectTypes=[];
+  document.getElementById('insp-part-info').style.display='none';
+  document.getElementById('insp-form').style.display='none';
+  document.getElementById('hp-empty').style.display='block';
+  document.getElementById('hp-result').style.display='none';
+  document.getElementById('hp-none').style.display='none';
+  ['btn-pass','btn-fail','btn-special'].forEach(id=>document.getElementById(id).className='action-btn');
+  document.getElementById('fail-section').style.display='none';
+}
+
+function lookupPart(partNo){
+  const pn=(partNo||'').trim().toUpperCase();
+  if(!pn){showToast('부품번호를 입력하세요','warning');return}
+  document.getElementById('insp-partno').value=pn;
+  const part=DB.parts.find(p=>p.partNo===pn);
+  currentPartNo=pn;
+  // Show part info
+  document.getElementById('insp-part-info').style.display='block';
+  document.getElementById('insp-form').style.display='block';
+  if(part){
+    document.getElementById('inf-partno').textContent=part.partNo;
+    document.getElementById('inf-partname').textContent=part.partName;
+    document.getElementById('inf-supplier').textContent=part.supplier;
+    document.getElementById('inf-category').textContent=part.category;
+    const gb=document.getElementById('inf-grade');
+    gb.textContent=part.grade+'등급'; gb.className='badge badge-'+part.grade;
+    document.getElementById('inf-lot').value='27차';
+  } else {
+    document.getElementById('inf-partno').textContent=pn;
+    document.getElementById('inf-partname').textContent='신규 부품';
+    document.getElementById('inf-supplier').textContent='미등록';
+    document.getElementById('inf-category').textContent='-';
+    const gb=document.getElementById('inf-grade');
+    gb.textContent='미등록'; gb.className='badge badge-gray';
+  }
+  // Build defect chips
+  buildDefectChips('defect-chips');
+  // Show history panel
+  const history=DB.inspections[pn];
+  if(!history||history.length===0){
+    document.getElementById('hp-empty').style.display='none';
+    document.getElementById('hp-result').style.display='none';
+    document.getElementById('hp-none').style.display='block';
+    document.getElementById('hp-none-sub').textContent=part?part.partName+' ('+pn+') — 이력 없음':'신규 부품 — 이력 없음';
+  } else {
+    showHistoryPanel(pn, history, part);
+  }
+}
+
+function showHistoryPanel(pn, history, part){
+  document.getElementById('hp-empty').style.display='none';
+  document.getElementById('hp-none').style.display='none';
+  document.getElementById('hp-result').style.display='block';
+
+  const failCount=history.filter(h=>h.result==='fail').length;
+  const avgRate=(history.reduce((a,h)=>a+h.rate,0)/history.length).toFixed(1);
+  const consec=countConsecFail(history);
+  const header=document.getElementById('hp-result-header');
+  header.className='hp-header'+(failCount>=3?' warn':'');
+  document.getElementById('hp-title').innerHTML='<i class="fa-solid fa-'+(failCount>=3?'triangle-exclamation':'circle-info')+'"></i> 불량 이력 알림';
+  document.getElementById('hp-subtitle').textContent=(part?part.partName+' · ':'')+pn;
+  document.getElementById('hp-total').textContent=history.length+'차';
+  document.getElementById('hp-fail').textContent=failCount+'차';
+  document.getElementById('hp-rate').textContent=avgRate+'%';
+
+  // Alert
+  const alertBox=document.getElementById('hp-alert-box');
+  if(consec>=3){
+    alertBox.innerHTML=`<div class="alert-box alert-danger"><i class="fa-solid fa-triangle-exclamation"></i><div><strong>${consec}차수 연속 불량 발생!</strong><br>반복 불량 부품입니다. 강화 검사를 적용하세요.</div></div>`;
+  } else if(failCount>=3){
+    const topType=getTopDefectType(history);
+    alertBox.innerHTML=`<div class="alert-box alert-warn"><i class="fa-solid fa-circle-exclamation"></i><div>이 부품은 <strong>${topType}</strong> 이력이 <strong>${failCount}회</strong> 있습니다. 해당 항목을 중점 검사하십시오.</div></div>`;
+  } else {
+    alertBox.innerHTML='';
+  }
+
+  // Freq list
+  const freq=getDefectFreq(history);
+  const maxFreq=Math.max(...Object.values(freq),1);
+  const colors=['#dc2626','#f97316','#eab308','#22c55e','#3b82f6'];
+  const freqEl=document.getElementById('hp-freq-list');
+  if(Object.keys(freq).length===0){
+    freqEl.innerHTML='<div class="text-xs text-muted">최근 이력에서 불량 유형 없음</div>';
+  } else {
+    freqEl.innerHTML=Object.entries(freq).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([t,c],i)=>`
+      <div class="freq-item">
+        <div class="freq-dot" style="background:${colors[i%colors.length]}"></div>
+        <div class="freq-name">${t}</div>
+        <div class="freq-bar-bg"><div class="freq-bar" style="width:${(c/maxFreq*100).toFixed(0)}%;background:${colors[i%colors.length]}"></div></div>
+        <div class="freq-cnt">${c}회</div>
+      </div>`).join('');
+  }
+
+  // Checklist
+  const topTypes=Object.entries(freq).sort((a,b)=>b[1]-a[1]).slice(0,3).map(x=>x[0]);
+  const checkItems=getCheckItems(topTypes);
+  document.getElementById('hp-checklist').innerHTML=checkItems.map((item,i)=>`
+    <div class="checklist-item">
+      <input type="checkbox" id="chk${i}">
+      <label for="chk${i}">${item}</label>
+    </div>`).join('');
+}
+
+function getTopDefectType(history){
+  const freq=getDefectFreq(history);
+  return Object.entries(freq).sort((a,b)=>b[1]-a[1])[0]?.[0]||'불량';
+}
+
+function getDefectFreq(history){
+  const freq={};
+  history.forEach(h=>h.types.forEach(t=>{freq[t]=(freq[t]||0)+1}));
+  return freq;
+}
+
+function countConsecFail(history){
+  let count=0;
+  for(let h of history){if(h.result==='fail')count++;else break}
+  return count;
+}
+
+function getCheckItems(topTypes){
+  const map={
+    '외관(스크래치)':['표면 전체 스크래치 여부 확인 (밝은 조명 사용)','포장재 손상 확인','날카로운 모서리 처리 상태 점검'],
+    '외관 불량':['외관 전체 육안 검사','표면 오염/변색 여부 확인','형상 일치 여부 점검'],
+    '치수 불량':['주요 치수 도면 대비 측정 (버니어 캘리퍼스 사용)','공차 범위 초과 여부 확인','조립 기준 치수 중점 측정'],
+    '포장 불량':['포장재 파손/찌그러짐 여부 확인','내용물 보호 상태 점검','라벨 부착 상태 확인'],
+    '기능 불량':['기능 동작 시험 실시','조립 적합성 확인','스트로크/토크 측정'],
+    '재질 불량':['재질 인증서 검토','경도 테스트 실시','재질 외관 이상 여부 확인'],
+  };
+  const items=new Set();
+  topTypes.forEach(t=>{(map[t]||[]).forEach(i=>items.add(i))});
+  if(items.size===0){
+    items.add('외관 전반 검사 (스크래치, 변형, 오염)');
+    items.add('주요 치수 측정 (도면 대비)');
+    items.add('포장 상태 및 수량 확인');
+  }
+  return [...items].slice(0,5);
+}
+
+function selectResult(r){
+  selectedResult=r;
+  ['btn-pass','btn-fail','btn-special'].forEach(id=>document.getElementById(id).className='action-btn');
+  document.getElementById('btn-'+r).className='action-btn selected-'+r;
+  document.getElementById('fail-section').style.display=(r==='fail')?'block':'none';
+}
+
+function buildDefectChips(containerId){
+  const c=document.getElementById(containerId);
+  c.innerHTML=DB.defectTypes.map(t=>`
+    <button class="chip" onclick="toggleDefectChip(this,'${t.name}')">${t.name}</button>`).join('');
+}
+
+function toggleDefectChip(el, name){
+  if(el.classList.contains('selected')){
+    el.classList.remove('selected');
+    selectedDefectTypes=selectedDefectTypes.filter(t=>t!==name);
+  } else {
+    el.classList.add('selected');
+    selectedDefectTypes.push(name);
+  }
+}
+
+function previewPhotos(input){
+  const prev=document.getElementById('photo-previews');
+  [...input.files].slice(0,10).forEach(f=>{
+    const url=URL.createObjectURL(f);
+    const img=document.createElement('img');
+    img.src=url; img.className='photo-thumb'; prev.appendChild(img);
+  });
+}
+
+function submitInspection(){
+  if(!currentPartNo){showToast('부품번호를 입력하세요','warning');return}
+  if(!selectedResult){showToast('검사 결과를 선택하세요','warning');return}
+  showToast('검사 결과가 저장되었습니다','success');
+  setTimeout(()=>clearPart(),500);
+  document.getElementById('insp-partno').value='';
+  document.getElementById('inf-lot').value='';
+  document.getElementById('inf-inqty').value='';
+  document.getElementById('inf-inspqty').value='';
+  document.getElementById('badge-insp').textContent=String(Math.max(0,parseInt(document.getElementById('badge-insp').textContent)-1)||0);
+}
+
+function openHistoryModal(pn){
+  const part=DB.parts.find(p=>p.partNo===pn);
+  const history=DB.inspections[pn]||[];
+  document.getElementById('modal-hist-title').textContent=(part?part.partName+' ':'')+pn+' — 전체 이력';
+  document.getElementById('modal-hist-body').innerHTML=`
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>차수</th><th>입고일</th><th>검사수</th><th>불량수</th><th>불량률</th><th>불량 유형</th><th>조치</th></tr></thead>
+        <tbody>${history.map(h=>`
+          <tr>
+            <td><span class="lot-badge">${h.lot}</span></td>
+            <td class="text-sm">${h.date}</td>
+            <td>${h.inspQty}</td>
+            <td>${h.defQty}</td>
+            <td><span class="rate-chip ${rateClass(h.rate)}">${h.rate.toFixed(1)}%</span></td>
+            <td>${h.types.map(t=>`<span class="tl-tag red" style="margin-right:3px">${t}</span>`).join('')||'-'}</td>
+            <td><span class="badge badge-gray text-xs">${h.action}</span></td>
+          </tr>`).join('')}</tbody>
+      </table>
+    </div>`;
+  document.getElementById('overlay-history').classList.add('show');
+}
+
+// ── Defect Registration ─────────────────────────────────────────────────
+function initRegForm(){
+  buildDefectChips('reg-chips');
+  const regChips=document.querySelectorAll('#reg-chips .chip');
+  regChips.forEach(c=>c.onclick=function(){toggleRegChip(this)});
+}
+
+let selectedRegTypes=[];
+function toggleRegChip(el){
+  if(el.classList.contains('selected')){el.classList.remove('selected');selectedRegTypes=selectedRegTypes.filter(t=>t!==el.textContent)}
+  else{el.classList.add('selected');selectedRegTypes.push(el.textContent)}
+}
+
+let selectedRegAction=null;
+function selectAction(action, btnId){
+  selectedRegAction=action;
+  ['rc-1','rc-2','rc-3','rc-4'].forEach(id=>document.getElementById(id).classList.remove('selected'));
+  document.getElementById(btnId).classList.add('selected');
+}
+
+function regLookupPart(v){
+  const p=DB.parts.find(x=>x.partNo===v.trim().toUpperCase());
+  if(p){
+    document.getElementById('reg-partname').value=p.partName;
+    document.getElementById('reg-supplier').value=p.supplier;
+  } else {
+    document.getElementById('reg-partname').value='';
+    document.getElementById('reg-supplier').value='';
+  }
+}
+
+function regPreviewPhotos(input){
+  const prev=document.getElementById('reg-photo-previews');
+  [...input.files].slice(0,10).forEach(f=>{
+    const url=URL.createObjectURL(f);
+    const img=document.createElement('img');
+    img.src=url; img.className='photo-thumb'; prev.appendChild(img);
+  });
+}
+
+function clearRegForm(){
+  ['reg-partno','reg-partname','reg-supplier','reg-lot','reg-inqty','reg-inspqty','reg-defqty','reg-desc'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('reg-date').value='2026-05-13';
+  document.querySelectorAll('#reg-chips .chip').forEach(c=>c.classList.remove('selected'));
+  ['rc-1','rc-2','rc-3','rc-4'].forEach(id=>document.getElementById(id).classList.remove('selected'));
+  document.getElementById('reg-photo-previews').innerHTML='';
+  selectedRegTypes=[]; selectedRegAction=null;
+}
+
+function submitDefectReg(){
+  const pn=document.getElementById('reg-partno').value.trim();
+  if(!pn){showToast('부품번호를 입력하세요','warning');return}
+  if(selectedRegTypes.length===0){showToast('불량 유형을 하나 이상 선택하세요','warning');return}
+  if(!selectedRegAction){showToast('조치 내용을 선택하세요','warning');return}
+  showToast('불량 데이터가 저장되었습니다','success');
+  clearRegForm();
+}
+
+// ── History ────────────────────────────────────────────────────────────
+function initHistory(){
+  // Fill supplier filter
+  const sel=document.getElementById('hist-supplier');
+  if(sel.options.length<=1){
+    [...new Set(DB.parts.map(p=>p.supplier))].forEach(s=>{const o=document.createElement('option');o.textContent=s;sel.appendChild(o)});
+  }
+  renderHistoryCards(DB.parts);
+}
+
+function filterHistory(q){
+  const grade=document.getElementById('hist-grade').value;
+  const supplier=document.getElementById('hist-supplier').value;
+  const filtered=DB.parts.filter(p=>{
+    const matchQ=!q||(p.partNo+p.partName).toLowerCase().includes(q.toLowerCase());
+    const matchG=!grade||p.grade===grade;
+    const matchS=!supplier||p.supplier===supplier;
+    return matchQ&&matchG&&matchS;
+  });
+  renderHistoryCards(filtered);
+}
+
+function renderHistoryCards(parts){
+  document.getElementById('hist-detail').style.display='none';
+  const c=document.getElementById('hist-part-cards');
+  c.innerHTML=parts.map(p=>{
+    const hist=DB.inspections[p.partNo]||[];
+    const failCnt=hist.filter(h=>h.result==='fail').length;
+    const avgRate=hist.length?(hist.reduce((a,h)=>a+h.rate,0)/hist.length).toFixed(1):'-';
+    return `<div class="card hover-row" style="cursor:pointer" onclick="loadHistoryDetail('${p.partNo}')">
+      <div class="flex-between mb8">
+        <div><span class="part-no" style="font-size:13px">${p.partNo}</span></div>
+        <div class="flex gap8"><span class="badge badge-${p.grade}">${p.grade}</span>${p.grade==='D'?'<span class="badge badge-fail">위험</span>':''}</div>
+      </div>
+      <div class="fw600" style="font-size:14px;margin-bottom:2px">${p.partName}</div>
+      <div class="text-sm text-secondary mb8">${p.supplier} · ${p.category}</div>
+      <div class="grid3" style="gap:8px">
+        <div style="text-align:center;padding:8px;background:#f8fafc;border-radius:var(--r)">
+          <div class="fw700 text-sm">${hist.length}차</div><div style="font-size:10px;color:var(--text-3)">총 입고</div>
+        </div>
+        <div style="text-align:center;padding:8px;background:#f8fafc;border-radius:var(--r)">
+          <div class="fw700 text-sm ${failCnt>0?'text-red':''}">${failCnt}차</div><div style="font-size:10px;color:var(--text-3)">불량 발생</div>
+        </div>
+        <div style="text-align:center;padding:8px;background:#f8fafc;border-radius:var(--r)">
+          <div class="fw700 text-sm">${avgRate}%</div><div style="font-size:10px;color:var(--text-3)">평균 불량률</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function loadHistoryDetail(pn){
+  const part=DB.parts.find(p=>p.partNo===pn);
+  const history=DB.inspections[pn]||[];
+  if(!history.length){showToast('이 부품의 검사 이력이 없습니다','info');return}
+  document.getElementById('hist-detail').style.display='block';
+  document.getElementById('hist-detail-title').innerHTML=
+    (part?`<span class="part-no">${pn}</span> ${part.partName}`:`<span class="part-no">${pn}</span>`)
+    +' 상세 이력';
+  // Timeline
+  document.getElementById('hist-timeline').innerHTML=`<div class="timeline">`+history.map(h=>`
+    <div class="tl-item">
+      <div class="tl-dot ${h.result}"></div>
+      <div class="tl-date">${h.date} · ${h.lot}</div>
+      <div class="tl-card">
+        <h4><span>${h.result==='pass'?'✅ 합격':'❌ 불합격'}</span><span class="rate-chip ${rateClass(h.rate)}">${h.rate.toFixed(1)}%</span></h4>
+        <div class="text-sm text-secondary">검사수: ${h.inspQty} · 불량수: ${h.defQty} · 검사자: ${h.inspector}</div>
+        ${h.types.length?`<div class="tl-tags">${h.types.map(t=>`<span class="tl-tag red">${t}</span>`).join('')}</div>`:''}
+        ${h.notes?`<div class="text-xs text-secondary" style="margin-top:5px">${h.notes}</div>`:''}
+      </div>
+    </div>`).join('')+'</div>';
+  // Table
+  document.getElementById('hist-table-body').innerHTML=history.map(h=>`
+    <tr>
+      <td><span class="lot-badge">${h.lot}</span></td>
+      <td class="text-sm">${h.date}</td>
+      <td>${h.inspQty}</td>
+      <td>${h.defQty}</td>
+      <td><span class="rate-chip ${rateClass(h.rate)}">${h.rate.toFixed(1)}%</span></td>
+      <td><span class="badge badge-${h.result}">${h.result==='pass'?'합격':'불합격'}</span></td>
+    </tr>`).join('');
+  // Charts
+  setTimeout(()=>{
+    if(rateTrendChart){rateTrendChart.destroy();rateTrendChart=null}
+    if(defectTypeChart){defectTypeChart.destroy();defectTypeChart=null}
+    const reversed=[...history].reverse();
+    const rtCtx=document.getElementById('chart-rate-trend').getContext('2d');
+    rateTrendChart=new Chart(rtCtx,{type:'line',data:{
+      labels:reversed.map(h=>h.lot),
+      datasets:[{label:'불량률 (%)',data:reversed.map(h=>h.rate),borderColor:'#dc2626',backgroundColor:'rgba(220,38,38,.1)',tension:.4,fill:true,pointRadius:5,pointBackgroundColor:'#dc2626'}]
+    },options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{callback:v=>v+'%',font:{size:11}}}}}});
+    const freq=getDefectFreq(history);
+    const dtCtx=document.getElementById('chart-defect-type').getContext('2d');
+    defectTypeChart=new Chart(dtCtx,{type:'bar',data:{
+      labels:Object.keys(freq),
+      datasets:[{label:'발생 건수',data:Object.values(freq),backgroundColor:'rgba(59,130,246,.7)',borderRadius:6}]
+    },options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{font:{size:11}}}}}});
+  },50);
+  document.getElementById('hist-detail').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+// ── Reports ─────────────────────────────────────────────────────────────
+function initReports(){
+  const sel=document.getElementById('rp-part');
+  if(sel.options.length<=1){
+    DB.parts.forEach(p=>{const o=document.createElement('option');o.value=p.partNo;o.textContent=p.partNo+' '+p.partName;sel.appendChild(o)});
+  }
+}
+
+function toggleRpChip(el){
+  el.classList.toggle('selected');
+}
+
+function generateReport(){
+  const type=document.getElementById('rp-type').value;
+  const start=document.getElementById('rp-start').value;
+  const end=document.getElementById('rp-end').value;
+  const prevEl=document.getElementById('report-preview');
+  // Build mock report
+  const topParts=DB.parts.filter(p=>DB.inspections[p.partNo]).slice(0,5);
+  prevEl.innerHTML=`
+    <div class="rp-header">
+      <h2>${type}</h2>
+      <p>조회 기간: ${start} ~ ${end} &nbsp;|&nbsp; 생성일: 2026-05-13</p>
+      <p>작성자: 이영희 (품질관리자) &nbsp;|&nbsp; 승인: 대기</p>
+    </div>
+    <div class="rp-section">
+      <h3>1. 요약 현황</h3>
+      <div class="grid3" style="gap:12px;margin-bottom:14px">
+        <div style="text-align:center;padding:12px;background:#f8fafc;border-radius:var(--r)"><div style="font-size:20px;font-weight:700">37</div><div class="text-xs text-muted">총 검사 건수</div></div>
+        <div style="text-align:center;padding:12px;background:#fef2f2;border-radius:var(--r)"><div style="font-size:20px;font-weight:700;color:#dc2626">14</div><div class="text-xs text-muted">불량 발생 건수</div></div>
+        <div style="text-align:center;padding:12px;background:#f8fafc;border-radius:var(--r)"><div style="font-size:20px;font-weight:700">3.2%</div><div class="text-xs text-muted">평균 불량률</div></div>
+      </div>
+    </div>
+    <div class="rp-section">
+      <h3>2. 부품별 불량 현황</h3>
+      <table style="font-size:12px">
+        <thead><tr><th>부품번호</th><th>부품명</th><th>공급사</th><th>검사수</th><th>불량수</th><th>불량률</th><th>등급</th></tr></thead>
+        <tbody>${topParts.map(p=>{
+          const hist=DB.inspections[p.partNo]||[];
+          const totInsp=hist.reduce((a,h)=>a+h.inspQty,0);
+          const totDef=hist.reduce((a,h)=>a+h.defQty,0);
+          const rate=totInsp?(totDef/totInsp*100).toFixed(1):'0.0';
+          return `<tr><td class="part-no">${p.partNo}</td><td>${p.partName}</td><td>${p.supplier}</td><td>${totInsp}</td><td>${totDef}</td><td><span class="rate-chip ${rateClass(parseFloat(rate))}">${rate}%</span></td><td><span class="badge badge-${p.grade}">${p.grade}</span></td></tr>`;
+        }).join('')}</tbody>
+      </table>
+    </div>
+    <div class="rp-section">
+      <h3>3. 주요 불량 유형 분석</h3>
+      <div class="tag-cloud">${DB.defectTypes.slice(0,8).map(t=>`<span style="background:#f1f5f9;padding:4px 10px;border-radius:10px;font-size:12px">${t.name} (${t.count}건)</span>`).join('')}</div>
+    </div>
+    <div class="rp-section">
+      <h3>4. 조치 현황</h3>
+      <table style="font-size:12px">
+        <thead><tr><th>조치 유형</th><th>건수</th><th>비율</th></tr></thead>
+        <tbody>
+          <tr><td>선별 후 사용</td><td>8</td><td>57.1%</td></tr>
+          <tr><td>전량 반품</td><td>3</td><td>21.4%</td></tr>
+          <tr><td>특채</td><td>3</td><td>21.4%</td></tr>
+        </tbody>
+      </table>
+    </div>`;
+  showToast('리포트 미리보기가 생성되었습니다','success');
+}
+
+// ── Admin ───────────────────────────────────────────────────────────────
+function initAdmin(){
+  renderAdminParts(DB.parts);
+  // Defect codes table
+  const ct=document.getElementById('admin-codes-table');
+  if(!ct.innerHTML){
+    ct.innerHTML=DB.defectTypes.map(t=>`
+      <tr>
+        <td><code style="font-size:11px;background:#f1f5f9;padding:2px 6px;border-radius:4px">${t.code}</code></td>
+        <td>${t.name}</td>
+        <td><span class="badge badge-gray">${t.category}</span></td>
+        <td>${t.count}건</td>
+        <td><span class="badge badge-pass">활성</span></td>
+      </tr>`).join('');
+  }
+}
+
+function renderAdminParts(parts){
+  document.getElementById('admin-parts-table').innerHTML=parts.map(p=>`
+    <tr>
+      <td><span class="part-no">${p.partNo}</span></td>
+      <td>${p.partName}</td>
+      <td>${p.supplier}</td>
+      <td><span class="badge badge-gray">${p.category}</span></td>
+      <td><span class="badge badge-${p.grade}">${p.grade}</span></td>
+      <td class="text-sm text-muted">${p.lastIn}</td>
+      <td>
+        <button class="btn btn-ghost btn-sm" onclick="showToast('편집 기능은 준비 중입니다','info')"><i class="fa-solid fa-pen"></i></button>
+        <button class="btn btn-ghost btn-sm text-red" onclick="showToast('삭제 기능은 준비 중입니다','warning')"><i class="fa-solid fa-trash"></i></button>
+      </td>
+    </tr>`).join('');
+}
+
+function filterAdminParts(q){
+  const filtered=DB.parts.filter(p=>(p.partNo+p.partName+p.supplier).toLowerCase().includes(q.toLowerCase()));
+  renderAdminParts(filtered);
+}
+
+function adminTab(tab, el){
+  document.querySelectorAll('.tabs .tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  ['parts','defect-codes','users','thresholds'].forEach(t=>{
+    const el2=document.getElementById('tab-'+t);
+    if(el2) el2.style.display=(t===tab)?'block':'none';
+  });
+}
+
+function showAddPartModal(){
+  document.getElementById('overlay-add-part').classList.add('show');
+}
+
+function addPart(){
+  const pno=document.getElementById('ap-partno').value.trim();
+  const pname=document.getElementById('ap-partname').value.trim();
+  const sup=document.getElementById('ap-supplier').value.trim();
+  const cat=document.getElementById('ap-category').value;
+  if(!pno||!pname||!sup){showToast('필수 항목을 모두 입력하세요','warning');return}
+  DB.parts.push({id:DB.parts.length+1,partNo:pno.toUpperCase(),partName:pname,supplier:sup,category:cat,grade:'A',lastIn:'-'});
+  renderAdminParts(DB.parts);
+  closeModal('overlay-add-part');
+  showToast('부품이 추가되었습니다','success');
+  ['ap-partno','ap-partname','ap-supplier'].forEach(id=>document.getElementById(id).value='');
+}
+
+// ── Helpers ─────────────────────────────────────────────────────────────
+function rateClass(r){
+  if(r===0) return 'rate-ok';
+  if(r<2) return 'rate-ok';
+  if(r<4) return 'rate-low';
+  if(r<7) return 'rate-mid';
+  return 'rate-high';
+}
+
+function closeModal(id){document.getElementById(id).classList.remove('show')}
+
+function showToast(msg, type='info'){
+  const wrap=document.getElementById('toast-wrap');
+  const icons={success:'fa-circle-check text-green',error:'fa-circle-xmark text-red',warning:'fa-triangle-exclamation text-orange',info:'fa-circle-info text-blue'};
+  const t=document.createElement('div');
+  t.className=`toast ${type}`;
+  t.innerHTML=`<i class="fa-solid ${icons[type]||icons.info}"></i><span>${msg}</span>`;
+  wrap.appendChild(t);
+  setTimeout(()=>{t.style.opacity='0';t.style.transition='opacity .3s';setTimeout(()=>t.remove(),300)},3000);
+}
+
+// Close modals on overlay click
+document.querySelectorAll('.overlay').forEach(o=>{
+  o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('show')});
+});
+
+// ── Init ────────────────────────────────────────────────────────────────
+initDashboard();
+</script>
+</body>
+</html>

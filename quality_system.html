@@ -369,7 +369,7 @@ tbody tr:hover td{background:#f8fafc}
       <div class="insp-layout">
         <div>
           <div class="card mb16">
-            <div class="card-header"><div class="card-title"><i class="fa-solid fa-barcode"></i> 부품 번호 입력</div><span class="text-xs text-muted">바코드 스캔 또는 직접 입력</span></div>
+            <div class="card-header"><div class="card-title"><i class="fa-solid fa-barcode"></i> 부품 번호 입력</div></div>
             <div class="input-group">
               <input class="form-input large" id="insp-partno" placeholder="부품번호 입력 (예: P-20341)" onkeydown="if(event.key==='Enter')lookupPart(this.value)" autocomplete="off">
               <button class="btn btn-primary" onclick="lookupPart(document.getElementById('insp-partno').value)"><i class="fa-solid fa-magnifying-glass"></i> 조회</button>

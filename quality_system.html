@@ -271,18 +271,6 @@ tbody tr:hover td{background:#f8fafc}
 .section-title::after{content:'';flex:1;height:1px;background:var(--border)}
 .hover-row{cursor:pointer}
 
-/* Login Screen */
-.login-screen{position:fixed;inset:0;background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%);z-index:500;display:flex;align-items:center;justify-content:center}
-.login-screen.hidden{display:none}
-.login-card{background:#fff;border-radius:20px;padding:40px 36px;width:380px;box-shadow:0 25px 60px rgba(0,0,0,.35)}
-.login-logo{width:56px;height:56px;background:linear-gradient(135deg,#2563eb,#7c3aed);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:24px;color:#fff}
-.login-title{text-align:center;margin-bottom:32px}
-.login-title h1{font-size:20px;font-weight:700;color:#0f172a;margin-bottom:4px}
-.login-title p{font-size:13px;color:#64748b}
-.login-error{background:#fef2f2;border:1px solid #fca5a5;color:#991b1b;padding:10px 12px;border-radius:8px;font-size:13px;margin-bottom:14px;display:none;gap:8px;align-items:center}
-.login-error.show{display:flex}
-.login-hint{margin-top:16px;text-align:center;font-size:11px;color:#94a3b8;line-height:1.8}
-
 /* Responsive */
 @media(max-width:1280px){.grid4{grid-template-columns:1fr 1fr}}
 @media(max-width:1100px){.insp-layout{grid-template-columns:1fr}}
@@ -291,37 +279,6 @@ tbody tr:hover td{background:#f8fafc}
 </style>
 </head>
 <body>
-
-<!-- Login Screen -->
-<div class="login-screen" id="login-screen">
-  <div class="login-card">
-    <div class="login-title">
-      <div class="login-logo"><i class="fa-solid fa-shield-halved"></i></div>
-      <h1>부품 불량 이력 관리</h1>
-      <p>Quality Management System</p>
-    </div>
-    <div class="form-group">
-      <label class="form-label">아이디</label>
-      <div class="input-icon">
-        <i class="fa-solid fa-user"></i>
-        <input class="form-input" id="login-id" placeholder="아이디 입력" autocomplete="off" onkeydown="if(event.key==='Enter')document.getElementById('login-pw').focus()">
-      </div>
-    </div>
-    <div class="form-group">
-      <label class="form-label">비밀번호</label>
-      <div class="input-icon" style="position:relative">
-        <i class="fa-solid fa-lock"></i>
-        <input class="form-input" id="login-pw" type="text" placeholder="비밀번호 입력" autocomplete="off" onkeydown="if(event.key==='Enter')login()" style="-webkit-text-security:disc;text-security:disc">
-        <span onclick="togglePw()" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);cursor:pointer;color:#94a3b8;font-size:14px" id="pw-eye"><i class="fa-regular fa-eye"></i></span>
-      </div>
-    </div>
-    <div class="login-error" id="login-error"><i class="fa-solid fa-circle-xmark"></i><span id="login-error-msg">아이디 또는 비밀번호가 올바르지 않습니다.</span></div>
-    <button class="btn btn-primary w100 btn-lg" id="login-btn" onclick="login()"><i class="fa-solid fa-right-to-bracket"></i> 로그인</button>
-    <div class="login-hint">
-      테스트 계정 &nbsp;|&nbsp; mskim / 1234 &nbsp;·&nbsp; yhlee / 1234<br>jhpark / 1234 &nbsp;·&nbsp; admin / admin1234
-    </div>
-  </div>
-</div>
 
 <!-- Loading Overlay -->
 <div class="loading-overlay hidden" id="loading-overlay">
@@ -349,20 +306,15 @@ tbody tr:hover td{background:#f8fafc}
   </div>
   <div class="s-footer">
     <div class="s-user">
-      <div class="s-user-avatar" id="s-avatar">?</div>
+      <div class="s-user-avatar">Q</div>
       <div class="s-user-info">
-        <div class="s-user-name" id="s-username">-</div>
-        <div class="s-user-role" id="s-userrole">-</div>
+        <div class="s-user-name">품질관리시스템</div>
+        <div class="s-user-role">Quality Management</div>
       </div>
     </div>
     <div class="db-status">
       <div class="db-dot" id="db-dot"></div>
       <span class="db-label" id="db-label">Supabase 연결됨</span>
-    </div>
-    <div style="margin-top:8px">
-      <button class="btn btn-ghost btn-sm" style="color:rgba(255,255,255,.4);font-size:11px;padding:4px 0;width:100%;justify-content:flex-start;gap:6px" onclick="logout()">
-        <i class="fa-solid fa-right-from-bracket"></i><span>로그아웃</span>
-      </button>
     </div>
   </div>
 </nav>
@@ -727,7 +679,6 @@ const DB = { parts:[], defectTypes:[], inspections:{} };
 let currentPage='dashboard', currentPartNo=null;
 let selectedResult=null, selectedDefectTypes=[], selectedRegAction=null;
 let rateTrendChart=null, defectTypeChart=null, top5Chart=null, defectDistChart=null;
-let currentUser = null;
 
 // ── 날짜 설정 ─────────────────────────────────────────────────────────
 (function(){
@@ -740,94 +691,9 @@ let currentUser = null;
   document.getElementById('rp-end').value   = ymd;
 })();
 
-// ── 계정 목록 (내장) ─────────────────────────────────────────────────
-const USERS = [
-  { id:1, name:'김민수', role:'입고 검사자',   username:'mskim',  password:'1234'      },
-  { id:2, name:'이영희', role:'품질 관리자',   username:'yhlee',  password:'1234'      },
-  { id:3, name:'박정훈', role:'입고 검사자',   username:'jhpark', password:'1234'      },
-  { id:4, name:'최수진', role:'구매/조달',     username:'sjchoi', password:'1234'      },
-  { id:5, name:'관리자', role:'시스템 관리자', username:'admin',  password:'admin1234' },
-];
-
-// ── 인증 ──────────────────────────────────────────────────────────────
-async function login(){
-  const username = document.getElementById('login-id').value.trim();
-  const password = document.getElementById('login-pw').value;
-  if(!username || !password){ showLoginError('아이디와 비밀번호를 입력하세요.'); return; }
-  const btn = document.getElementById('login-btn');
-  btn.disabled = true;
-  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 확인 중...';
-
-  const user = USERS.find(u => u.username === username && u.password === password);
-  if(!user){
-    showLoginError('아이디 또는 비밀번호가 올바르지 않습니다.');
-    btn.disabled = false;
-    btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> 로그인';
-    return;
-  }
-  currentUser = { id: user.id, name: user.name, role: user.role, username: user.username };
-  localStorage.setItem('qms_user', JSON.stringify(currentUser));
-  document.getElementById('login-screen').classList.add('hidden');
-  updateSidebarUser();
-  await startApp();
-  btn.disabled = false;
-  btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> 로그인';
-}
-
-function logout(){
-  if(!confirm('로그아웃 하시겠습니까?')) return;
-  currentUser = null;
-  localStorage.removeItem('qms_user');
-  document.getElementById('login-screen').classList.remove('hidden');
-  document.getElementById('login-id').value = '';
-  document.getElementById('login-pw').value = '';
-  hideLoginError();
-}
-
-function togglePw(){
-  const el = document.getElementById('login-pw');
-  const eye = document.getElementById('pw-eye');
-  if(el.style.webkitTextSecurity === 'disc' || el.style.webkitTextSecurity === ''){
-    el.style.webkitTextSecurity = 'none';
-    el.style.textSecurity = 'none';
-    eye.innerHTML = '<i class="fa-regular fa-eye-slash"></i>';
-  } else {
-    el.style.webkitTextSecurity = 'disc';
-    el.style.textSecurity = 'disc';
-    eye.innerHTML = '<i class="fa-regular fa-eye"></i>';
-  }
-}
-
-function showLoginError(msg){
-  const el = document.getElementById('login-error');
-  document.getElementById('login-error-msg').textContent = msg;
-  el.classList.add('show');
-}
-function hideLoginError(){ document.getElementById('login-error').classList.remove('show'); }
-
-function updateSidebarUser(){
-  if(!currentUser) return;
-  const first = currentUser.name.charAt(0);
-  document.getElementById('s-avatar').textContent = first;
-  document.getElementById('s-username').textContent = currentUser.name;
-  document.getElementById('s-userrole').textContent = currentUser.role || '사용자';
-}
-
 // ── DB 연결 및 초기화 ─────────────────────────────────────────────────
 async function initApp(){
-  // 세션 복원
-  const saved = localStorage.getItem('qms_user');
-  if(saved){
-    try {
-      currentUser = JSON.parse(saved);
-      document.getElementById('login-screen').classList.add('hidden');
-      updateSidebarUser();
-      await startApp();
-    } catch(e){
-      localStorage.removeItem('qms_user');
-    }
-  }
-  // 세션 없으면 로그인 화면 유지
+  await startApp();
 }
 
 async function startApp(){
@@ -838,7 +704,7 @@ async function startApp(){
     await loadAllData();
     setDbStatus(true);
     initDashboard();
-    showToast(`${currentUser.name}님 환영합니다`, 'success');
+    showToast('데이터 로드 완료', 'success');
   } catch(e) {
     setDbStatus(false);
     showToast('DB 연결 오류: ' + e.message, 'error');
@@ -1164,7 +1030,7 @@ async function submitInspection(){
     incoming_qty:parseInt(document.getElementById('inf-inqty').value)||0,
     inspect_qty:inspQty, defect_qty:defQty,
     defect_rate:parseFloat(rate.toFixed(2)), result:selectedResult,
-    inspector: currentUser?.name || '-', notes:document.getElementById('inf-notes').value,
+    inspector: '-', notes:document.getElementById('inf-notes').value,
     action:document.getElementById('inf-action').value||'-',
   }).select().single();
   if(error){showToast('저장 실패: '+error.message,'error');btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-floppy-disk"></i> 검사 결과 저장';return}
@@ -1229,7 +1095,7 @@ async function submitDefectReg(){
     incoming_date:document.getElementById('reg-date').value,
     incoming_qty:parseInt(document.getElementById('reg-inqty').value)||0,
     inspect_qty:inspQty, defect_qty:defQty, defect_rate:parseFloat(rate.toFixed(2)),
-    result:'fail', inspector: currentUser?.name || '-',
+    result:'fail', inspector: '-',
     notes:document.getElementById('reg-desc').value, action:selectedRegAction,
   }).select().single();
   if(error){showToast('저장 실패: '+error.message,'error');btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-floppy-disk"></i> 불량 데이터 저장';return}

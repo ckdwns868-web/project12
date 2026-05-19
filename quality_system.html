@@ -501,7 +501,6 @@ tbody tr:hover td{background:#f8fafc}
         <div class="flex gap12 flex-wrap">
           <div class="input-icon" style="flex:1;min-width:200px"><i class="fa-solid fa-magnifying-glass"></i><input class="form-input" id="hist-search" placeholder="부품번호 또는 부품명으로 검색..." oninput="filterHistory(this.value)"></div>
           <select class="form-select" style="width:140px" id="hist-supplier" onchange="filterHistory(document.getElementById('hist-search').value)"><option value="">전체 공급사</option></select>
-          <select class="form-select" style="width:120px" id="hist-grade" onchange="filterHistory(document.getElementById('hist-search').value)"><option value="">전체 등급</option><option>A</option><option>B</option><option>C</option><option>D</option></select>
         </div>
       </div>
       <div class="grid2 mb20" id="hist-part-cards"></div>
@@ -1117,13 +1116,11 @@ function initHistory(){
 }
 
 function filterHistory(q){
-  const grade=document.getElementById('hist-grade').value;
   const supplier=document.getElementById('hist-supplier').value;
   const filtered=DB.parts.filter(p=>{
     const mQ=!q||(p.partNo+p.partName).toLowerCase().includes(q.toLowerCase());
-    const mG=!grade||p.grade===grade;
     const mS=!supplier||p.supplier===supplier;
-    return mQ&&mG&&mS;
+    return mQ&&mS;
   });
   renderHistoryCards(filtered);
   document.getElementById('hist-detail').style.display='none';

@@ -327,6 +327,10 @@ tbody tr:hover td{background:#f8fafc}
         <button class="btn btn-ghost btn-sm" type="button" onclick="toggleAuthPw('au-pw','au-pw-eye')"><i id="au-pw-eye" class="fa-regular fa-eye"></i></button>
       </div>
     </div>
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:12px">
+      <input type="checkbox" id="save-id" style="width:15px;height:15px;cursor:pointer">
+      <label for="save-id" style="font-size:13px;color:var(--text-2);cursor:pointer">아이디 저장</label>
+    </div>
     <div class="auth-err" id="login-err"></div>
     <button class="btn btn-primary w100" id="login-btn" onclick="doLogin()"><i class="fa-solid fa-right-to-bracket"></i> 로그인</button>
     <div class="auth-link">계정이 없으신가요? <a href="#" onclick="showAuthCard('signup');return false">회원가입</a></div>
@@ -778,6 +782,7 @@ async function initApp(){
     await startApp();
   } else {
     document.getElementById('auth-screen').style.display = 'flex';
+    loadSavedId();
   }
 }
 
@@ -1393,6 +1398,15 @@ function showAuthCard(which){
   document.getElementById('auth-signup').style.display = which==='signup' ? '' : 'none';
   document.getElementById('login-err').style.display   = 'none';
   document.getElementById('signup-err').style.display  = 'none';
+  if(which==='login') loadSavedId();
+}
+
+function loadSavedId(){
+  const saved = localStorage.getItem('saved_email');
+  if(saved){
+    document.getElementById('au-email').value = saved;
+    document.getElementById('save-id').checked = true;
+  }
 }
 
 function toggleAuthPw(inputId, iconId){
@@ -1417,6 +1431,10 @@ async function doLogin(){
     errEl.textContent = error.message.includes('Invalid') ? '이메일 또는 비밀번호가 올바르지 않습니다' : error.message;
     errEl.style.display=''; return;
   }
+  if(document.getElementById('save-id').checked)
+    localStorage.setItem('saved_email', email);
+  else
+    localStorage.removeItem('saved_email');
   currentUser = data.user;
   updateSidebarUser(data.user);
   document.getElementById('auth-screen').style.display = 'none';

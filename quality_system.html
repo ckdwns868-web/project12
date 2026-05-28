@@ -76,6 +76,10 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .tb-date{font-size:12px;color:var(--text-2)}
 .tb-btn{width:32px;height:32px;border-radius:var(--r);border:1px solid var(--border);background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-2);font-size:13px;position:relative}
 .tb-btn .dot{position:absolute;top:5px;right:5px;width:7px;height:7px;background:var(--red);border-radius:50%;border:2px solid #fff}
+.nav-btns{display:flex;gap:2px;align-items:center}
+.nav-btn{width:28px;height:28px;border-radius:50%;border:none;background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#999;font-size:14px;transition:background .15s,color .15s}
+.nav-btn:hover:not(:disabled){background:#e8e8e8;color:#333}
+.nav-btn:disabled{color:#ccc;cursor:default}
 .page-wrap{flex:1;padding:22px 24px}
 
 /* Pages */
@@ -323,7 +327,10 @@ tbody tr:hover td{background:#f8fafc}
 <div class="main">
   <header class="topbar">
     <div class="tb-left">
-      <div class="tb-btn" id="back-btn" title="뒤로가기" onclick="goBack()" style="display:none"><i class="fa-solid fa-arrow-left"></i></div>
+      <div class="nav-btns">
+        <button class="nav-btn" id="back-btn" title="뒤로가기" onclick="goBack()" disabled><i class="fa-solid fa-chevron-left"></i></button>
+        <button class="nav-btn" id="fwd-btn" title="앞으로가기" onclick="goForward()" disabled><i class="fa-solid fa-chevron-right"></i></button>
+      </div>
       <div class="page-title" id="page-title">대시보드</div>
     </div>
     <div class="tb-right">
@@ -802,10 +809,13 @@ async function reloadData(){
 }
 
 // ── Navigation ─────────────────────────────────────────────────────────
-let pageHistory=[];
+let pageHistory=[], pageForward=[];
 
-function navigate(page, pushHistory=true){
-  if(pushHistory && currentPage && currentPage!==page) pageHistory.push(currentPage);
+function navigate(page, pushHistory=true, clearForward=true){
+  if(pushHistory && currentPage && currentPage!==page){
+    pageHistory.push(currentPage);
+    if(clearForward) pageForward=[];
+  }
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('page-'+page).classList.add('active');
@@ -815,8 +825,8 @@ function navigate(page, pushHistory=true){
   currentPage=page;
   const titles={dashboard:'대시보드',inspection:'입고 검사 등록','defect-reg':'불량 등록',history:'부품 이력 조회',reports:'부적합 리포트',admin:'관리'};
   document.getElementById('page-title').textContent = titles[page]||page;
-  const backBtn=document.getElementById('back-btn');
-  if(backBtn) backBtn.style.display = pageHistory.length>0 ? '' : 'none';
+  document.getElementById('back-btn').disabled = pageHistory.length===0;
+  document.getElementById('fwd-btn').disabled  = pageForward.length===0;
   if(page==='dashboard') initDashboard();
   if(page==='history')   initHistory();
   if(page==='defect-reg') initRegForm();
@@ -827,8 +837,16 @@ function navigate(page, pushHistory=true){
 
 function goBack(){
   if(pageHistory.length===0) return;
+  pageForward.push(currentPage);
   const prev=pageHistory.pop();
-  navigate(prev, false);
+  navigate(prev, false, false);
+}
+
+function goForward(){
+  if(pageForward.length===0) return;
+  pageHistory.push(currentPage);
+  const next=pageForward.pop();
+  navigate(next, false, false);
 }
 
 // ── Dashboard ──────────────────────────────────────────────────────────

@@ -1442,27 +1442,40 @@ function handleEcountFile(file){
     try {
       const wb = XLSX.read(e.target.result, {type:'binary'});
       const ws = wb.Sheets[wb.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(ws, {defval:''});
-      if(!rows.length){ showToast('데이터가 없습니다','warning'); return; }
+      // 배열로 읽어서 헤더 행 직접 탐색 (이카운트는 상단에 부가 행이 있음)
+      const allRows = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
 
-      // 이카운트 컬럼 자동 감지
-      const sample = rows[0];
-      const keys = Object.keys(sample);
-      const findKey = (...candidates) => keys.find(k => candidates.some(c => k.includes(c))) || '';
-      const codeKey    = findKey('품목코드','코드');
-      const nameKey    = findKey('품목명','상품명');
-      const supplierKey= findKey('거래처명','거래처','공급','업체');
+      // 품목코드가 포함된 행을 헤더로 인식
+      let headerIdx = -1;
+      for(let i = 0; i < Math.min(allRows.length, 15); i++){
+        if(allRows[i].some(cell => String(cell).includes('품목코드'))){
+          headerIdx = i; break;
+        }
+      }
 
-      if(!codeKey){ showToast('품목코드 컬럼을 찾을 수 없습니다','error'); return; }
+      if(headerIdx === -1){
+        const found = (allRows[0]||[]).slice(0,6).map(c=>String(c)).filter(Boolean).join(', ');
+        showToast(`품목코드 컬럼을 찾을 수 없습니다. 감지된 컬럼: ${found||'없음'}`, 'error');
+        return;
+      }
 
-      ecParsedRows = rows
+      const headers = allRows[headerIdx].map(h => String(h).trim());
+      const dataRows = allRows.slice(headerIdx + 1);
+
+      const findIdx = (...candidates) => headers.findIndex(h => candidates.some(c => h.includes(c)));
+      const codeIdx    = findIdx('품목코드');
+      const nameIdx    = findIdx('품목명', '상품명');
+      const supplierIdx= findIdx('거래처명', '거래처', '공급', '업체');
+
+      ecParsedRows = dataRows
         .map(r => ({
-          partNo:   String(r[codeKey]||'').trim(),
-          partName: String(r[nameKey]||'').trim(),
-          supplier: supplierKey ? String(r[supplierKey]||'').trim() : '',
+          partNo:   String(r[codeIdx]   ?? '').trim(),
+          partName: String(r[nameIdx]   ?? '').trim(),
+          supplier: supplierIdx >= 0 ? String(r[supplierIdx] ?? '').trim() : '',
         }))
         .filter(r => r.partNo && r.partName);
 
+      if(!ecParsedRows.length){ showToast('유효한 데이터가 없습니다','warning'); return; }
       renderEcountPreview(ecParsedRows);
     } catch(err){ showToast('파일 읽기 오류: '+err.message,'error'); }
   };

@@ -685,9 +685,29 @@ tbody tr:hover td{background:#f8fafc}
     <div class="drop-zone" id="ec-drop" onclick="document.getElementById('ec-file-input').click()" ondragover="xlDragOver2(event)" ondragleave="xlDragLeave2(event)" ondrop="xlDrop2(event)">
       <i class="fa-solid fa-cloud-arrow-up"></i>
       <div style="font-weight:600;margin-bottom:4px">이카운트에서 내보낸 Excel 파일을 올려주세요</div>
-      <div class="text-sm text-muted">품목코드 · 품목명 · 거래처명 컬럼이 포함된 파일</div>
+      <div class="text-sm text-muted">.xlsx, .xls 파일 지원</div>
     </div>
     <input type="file" id="ec-file-input" accept=".xlsx,.xls" style="display:none" onchange="handleEcountFile(this.files[0])">
+    <!-- 컬럼 매핑 -->
+    <div id="ec-mapping" style="display:none;margin-top:20px">
+      <div style="font-weight:600;margin-bottom:12px"><i class="fa-solid fa-table-columns"></i> 컬럼 매핑 선택</div>
+      <div class="grid2" style="gap:12px;margin-bottom:16px">
+        <div class="form-group" style="margin:0">
+          <label class="form-label">품목코드 컬럼 <span style="color:red">*</span></label>
+          <select class="form-select" id="ec-col-code"></select>
+        </div>
+        <div class="form-group" style="margin:0">
+          <label class="form-label">품목명 컬럼 <span style="color:red">*</span></label>
+          <select class="form-select" id="ec-col-name"></select>
+        </div>
+        <div class="form-group" style="margin:0">
+          <label class="form-label">거래처명 컬럼 <span class="text-muted">(선택)</span></label>
+          <select class="form-select" id="ec-col-supplier"></select>
+        </div>
+      </div>
+      <button class="btn btn-outline btn-sm" onclick="applyEcountMapping()"><i class="fa-solid fa-eye"></i> 미리보기</button>
+    </div>
+    <!-- 미리보기 -->
     <div id="ec-preview" style="display:none;margin-top:20px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
         <div style="font-weight:600" id="ec-preview-title"></div>
@@ -1435,6 +1455,8 @@ function xlDragOver2(e){ e.preventDefault(); document.getElementById('ec-drop').
 function xlDragLeave2(){ document.getElementById('ec-drop').classList.remove('drag'); }
 function xlDrop2(e){ e.preventDefault(); xlDragLeave2(); handleEcountFile(e.dataTransfer.files[0]); }
 
+let ecAllRows = [], ecHeaders = [];
+
 function handleEcountFile(file){
   if(!file) return;
   const reader = new FileReader();
@@ -1442,44 +1464,57 @@ function handleEcountFile(file){
     try {
       const wb = XLSX.read(e.target.result, {type:'binary'});
       const ws = wb.Sheets[wb.SheetNames[0]];
-      // 배열로 읽어서 헤더 행 직접 탐색 (이카운트는 상단에 부가 행이 있음)
-      const allRows = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
+      ecAllRows = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
 
-      // 품목코드가 포함된 행을 헤더로 인식
-      let headerIdx = -1;
-      for(let i = 0; i < Math.min(allRows.length, 15); i++){
-        if(allRows[i].some(cell => String(cell).includes('품목코드'))){
-          headerIdx = i; break;
-        }
+      // 헤더 행 탐색: 가장 많은 비어있지 않은 셀을 가진 상위 15행 중 하나
+      let headerIdx = 0;
+      let maxCols = 0;
+      for(let i = 0; i < Math.min(ecAllRows.length, 15); i++){
+        const nonEmpty = ecAllRows[i].filter(c => String(c).trim()).length;
+        if(nonEmpty > maxCols){ maxCols = nonEmpty; headerIdx = i; }
       }
 
-      if(headerIdx === -1){
-        const found = (allRows[0]||[]).slice(0,6).map(c=>String(c)).filter(Boolean).join(', ');
-        showToast(`품목코드 컬럼을 찾을 수 없습니다. 감지된 컬럼: ${found||'없음'}`, 'error');
-        return;
-      }
+      ecHeaders = ecAllRows[headerIdx].map(h => String(h).trim());
+      ecAllRows = ecAllRows.slice(headerIdx + 1).filter(r => r.some(c => String(c).trim()));
 
-      const headers = allRows[headerIdx].map(h => String(h).trim());
-      const dataRows = allRows.slice(headerIdx + 1);
+      // 드롭다운 채우기
+      const none = '<option value="-1">-- 선택 안함 --</option>';
+      const opts = ecHeaders.map((h,i) => `<option value="${i}">${h||'(빈 컬럼 '+i+')'}</option>`).join('');
+      document.getElementById('ec-col-code').innerHTML = opts;
+      document.getElementById('ec-col-name').innerHTML = opts;
+      document.getElementById('ec-col-supplier').innerHTML = none + opts;
 
-      const findIdx = (...candidates) => headers.findIndex(h => candidates.some(c => h.includes(c)));
-      const codeIdx    = findIdx('품목코드');
-      const nameIdx    = findIdx('품목명', '상품명');
-      const supplierIdx= findIdx('거래처명', '거래처', '공급', '업체');
+      // 자동 선택 힌트
+      const autoSel = (el, ...words) => {
+        const idx = ecHeaders.findIndex(h => words.some(w => h.includes(w)));
+        if(idx >= 0) el.value = idx;
+      };
+      autoSel(document.getElementById('ec-col-code'),    '품목코드');
+      autoSel(document.getElementById('ec-col-name'),    '품목명','상품명');
+      autoSel(document.getElementById('ec-col-supplier'),'거래처','공급');
 
-      ecParsedRows = dataRows
-        .map(r => ({
-          partNo:   String(r[codeIdx]   ?? '').trim(),
-          partName: String(r[nameIdx]   ?? '').trim(),
-          supplier: supplierIdx >= 0 ? String(r[supplierIdx] ?? '').trim() : '',
-        }))
-        .filter(r => r.partNo && r.partName);
-
-      if(!ecParsedRows.length){ showToast('유효한 데이터가 없습니다','warning'); return; }
-      renderEcountPreview(ecParsedRows);
+      document.getElementById('ec-mapping').style.display = '';
+      document.getElementById('ec-preview').style.display = 'none';
     } catch(err){ showToast('파일 읽기 오류: '+err.message,'error'); }
   };
   reader.readAsBinaryString(file);
+}
+
+function applyEcountMapping(){
+  const codeIdx     = parseInt(document.getElementById('ec-col-code').value);
+  const nameIdx     = parseInt(document.getElementById('ec-col-name').value);
+  const supplierIdx = parseInt(document.getElementById('ec-col-supplier').value);
+
+  ecParsedRows = ecAllRows
+    .map(r => ({
+      partNo:   String(r[codeIdx]   ?? '').trim(),
+      partName: String(r[nameIdx]   ?? '').trim(),
+      supplier: supplierIdx >= 0 ? String(r[supplierIdx] ?? '').trim() : '',
+    }))
+    .filter(r => r.partNo && r.partName);
+
+  if(!ecParsedRows.length){ showToast('유효한 데이터가 없습니다. 컬럼 선택을 확인해주세요','warning'); return; }
+  renderEcountPreview(ecParsedRows);
 }
 
 function renderEcountPreview(rows){

@@ -489,9 +489,9 @@ tbody tr:hover td{background:#f8fafc}
       <div class="insp-layout">
         <div>
           <div class="card mb16">
-            <div class="card-header"><div class="card-title"><i class="fa-solid fa-barcode"></i> 부품 번호 입력</div></div>
+            <div class="card-header"><div class="card-title"><i class="fa-solid fa-barcode"></i> 품목코드 입력</div></div>
             <div class="input-group">
-              <input class="form-input large" id="insp-partno" placeholder="부품번호 입력 (예: P-20341)" onkeydown="if(event.key==='Enter')lookupPart(this.value)" autocomplete="off">
+              <input class="form-input large" id="insp-partno" placeholder="품목코드 입력" onkeydown="if(event.key==='Enter')lookupPart(this.value)" autocomplete="off">
               <button class="btn btn-primary" onclick="lookupPart(document.getElementById('insp-partno').value)"><i class="fa-solid fa-magnifying-glass"></i> 조회</button>
             </div>
             <div class="flex-center gap8" style="margin-top:10px;flex-wrap:wrap">

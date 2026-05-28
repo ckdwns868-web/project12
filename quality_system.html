@@ -763,11 +763,12 @@ let rateTrendChart=null, defectTypeChart=null, top5Chart=null, defectDistChart=n
 
 // ── 날짜 설정 ─────────────────────────────────────────────────────────
 (function(){
-  const today = new Date(2026,4,13);
+  const today = new Date();
   document.getElementById('tb-date').textContent = today.toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric',weekday:'long'});
-  const ymd = '2026-05-13';
+  const ymd = today.toISOString().slice(0,10);
   document.getElementById('inf-date').value = ymd;
-  document.getElementById('rp-start').value = '2026-01-01';
+  const firstDay = ymd.slice(0,4) + '-01-01';
+  document.getElementById('rp-start').value = firstDay;
   document.getElementById('rp-end').value   = ymd;
 })();
 

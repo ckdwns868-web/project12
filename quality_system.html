@@ -632,7 +632,10 @@ tbody tr:hover td{background:#f8fafc}
       <div id="tab-parts">
         <div class="flex-between mb16">
           <div class="input-icon" style="width:280px"><i class="fa-solid fa-magnifying-glass"></i><input class="form-input" placeholder="부품 검색..." oninput="filterAdminParts(this.value)"></div>
-          <button class="btn btn-primary btn-sm" onclick="showAddPartModal()"><i class="fa-solid fa-plus"></i> 부품 추가</button>
+          <div class="flex gap8">
+            <button class="btn btn-outline btn-sm" onclick="openEcountModal()"><i class="fa-solid fa-file-excel" style="color:#16a34a"></i> 이카운트 Excel 등록</button>
+            <button class="btn btn-primary btn-sm" onclick="showAddPartModal()"><i class="fa-solid fa-plus"></i> 부품 추가</button>
+          </div>
         </div>
         <div class="card"><div class="table-wrap"><table><thead><tr><th>부품번호</th><th>부품명</th><th>공급사</th><th>분류</th><th>등급</th><th>최근 입고</th><th>관리</th></tr></thead><tbody id="admin-parts-table"></tbody></table></div></div>
       </div>
@@ -669,6 +672,29 @@ tbody tr:hover td{background:#f8fafc}
   <div class="modal" style="max-width:700px">
     <div class="modal-hdr"><div class="modal-title" id="modal-hist-title">상세 이력</div><button class="modal-close" onclick="closeModal('overlay-history')"><i class="fa-solid fa-xmark"></i></button></div>
     <div id="modal-hist-body"></div>
+  </div>
+</div>
+
+<!-- Modal: Ecount Excel Import -->
+<div class="xl-modal" id="ecount-modal">
+  <div class="xl-box">
+    <div class="xl-header">
+      <div style="font-size:18px;font-weight:700"><i class="fa-solid fa-file-excel" style="color:#16a34a"></i> 이카운트 품목 Excel 등록</div>
+      <button class="btn btn-ghost btn-sm" onclick="closeEcountModal()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="drop-zone" id="ec-drop" onclick="document.getElementById('ec-file-input').click()" ondragover="xlDragOver2(event)" ondragleave="xlDragLeave2(event)" ondrop="xlDrop2(event)">
+      <i class="fa-solid fa-cloud-arrow-up"></i>
+      <div style="font-weight:600;margin-bottom:4px">이카운트에서 내보낸 Excel 파일을 올려주세요</div>
+      <div class="text-sm text-muted">품목코드 · 품목명 · 거래처명 컬럼이 포함된 파일</div>
+    </div>
+    <input type="file" id="ec-file-input" accept=".xlsx,.xls" style="display:none" onchange="handleEcountFile(this.files[0])">
+    <div id="ec-preview" style="display:none;margin-top:20px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div style="font-weight:600" id="ec-preview-title"></div>
+        <button class="btn btn-primary btn-sm" id="ec-save-btn" onclick="saveEcountData()"><i class="fa-solid fa-floppy-disk"></i> 등록</button>
+      </div>
+      <div class="table-wrap"><table class="xl-table"><thead><tr><th>#</th><th>품목코드</th><th>품목명</th><th>거래처(공급사)</th><th>상태</th></tr></thead><tbody id="ec-tbody"></tbody></table></div>
+    </div>
   </div>
 </div>
 
@@ -1392,6 +1418,100 @@ function showToast(msg,type='info'){
 document.querySelectorAll('.overlay').forEach(o=>{
   o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('show')});
 });
+
+// ── 이카운트 Excel 등록 ───────────────────────────────────────────────
+let ecParsedRows = [];
+
+function openEcountModal(){
+  document.getElementById('ecount-modal').classList.add('open');
+  document.getElementById('ec-preview').style.display = 'none';
+  document.getElementById('ec-file-input').value = '';
+  ecParsedRows = [];
+}
+
+function closeEcountModal(){ document.getElementById('ecount-modal').classList.remove('open'); }
+
+function xlDragOver2(e){ e.preventDefault(); document.getElementById('ec-drop').classList.add('drag'); }
+function xlDragLeave2(){ document.getElementById('ec-drop').classList.remove('drag'); }
+function xlDrop2(e){ e.preventDefault(); xlDragLeave2(); handleEcountFile(e.dataTransfer.files[0]); }
+
+function handleEcountFile(file){
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb = XLSX.read(e.target.result, {type:'binary'});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, {defval:''});
+      if(!rows.length){ showToast('데이터가 없습니다','warning'); return; }
+
+      // 이카운트 컬럼 자동 감지
+      const sample = rows[0];
+      const keys = Object.keys(sample);
+      const findKey = (...candidates) => keys.find(k => candidates.some(c => k.includes(c))) || '';
+      const codeKey    = findKey('품목코드','코드');
+      const nameKey    = findKey('품목명','상품명');
+      const supplierKey= findKey('거래처명','거래처','공급','업체');
+
+      if(!codeKey){ showToast('품목코드 컬럼을 찾을 수 없습니다','error'); return; }
+
+      ecParsedRows = rows
+        .map(r => ({
+          partNo:   String(r[codeKey]||'').trim(),
+          partName: String(r[nameKey]||'').trim(),
+          supplier: supplierKey ? String(r[supplierKey]||'').trim() : '',
+        }))
+        .filter(r => r.partNo && r.partName);
+
+      renderEcountPreview(ecParsedRows);
+    } catch(err){ showToast('파일 읽기 오류: '+err.message,'error'); }
+  };
+  reader.readAsBinaryString(file);
+}
+
+function renderEcountPreview(rows){
+  const existingNos = new Set(DB.parts.map(p => p.partNo));
+  const tbody = document.getElementById('ec-tbody');
+  tbody.innerHTML = rows.map((r,i) => {
+    const isDup = existingNos.has(r.partNo);
+    const badge = isDup
+      ? `<span class="xl-badge" style="background:#fef9c3;color:#854d0e">이미 등록됨</span>`
+      : `<span class="xl-badge ok">신규</span>`;
+    return `<tr class="${isDup?'':'xl-ok'}">
+      <td>${i+1}</td>
+      <td>${r.partNo}</td>
+      <td>${r.partName}</td>
+      <td>${r.supplier||'-'}</td>
+      <td>${badge}</td>
+    </tr>`;
+  }).join('');
+  const newCount = rows.filter(r => !existingNos.has(r.partNo)).length;
+  document.getElementById('ec-preview-title').textContent =
+    `${rows.length}건 파싱 완료 (신규: ${newCount}건 / 중복: ${rows.length-newCount}건)`;
+  document.getElementById('ec-preview').style.display = '';
+}
+
+async function saveEcountData(){
+  const existingNos = new Set(DB.parts.map(p => p.partNo));
+  const newRows = ecParsedRows.filter(r => !existingNos.has(r.partNo));
+  if(!newRows.length){ showToast('등록할 신규 품목이 없습니다','warning'); return; }
+  const btn = document.getElementById('ec-save-btn');
+  btn.disabled=true; btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> 등록 중...';
+  let saved=0, failed=0;
+  for(const r of newRows){
+    const {error} = await sb.from('parts').insert({
+      part_no: r.partNo, part_name: r.partName,
+      supplier: r.supplier||'미입력', grade:'A',
+    });
+    if(error) failed++;
+    else saved++;
+  }
+  await loadAllData();
+  renderAdminParts(DB.parts);
+  btn.disabled=false; btn.innerHTML='<i class="fa-solid fa-floppy-disk"></i> 등록';
+  showToast(`${saved}건 등록 완료${failed?`, ${failed}건 실패`:''}`, saved>0?'success':'error');
+  if(saved>0) closeEcountModal();
+}
 
 // ── Auth ─────────────────────────────────────────────────────────────
 function showAuthCard(which){

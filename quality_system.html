@@ -6,6 +6,7 @@
 <title>부품 불량 이력 관리 시스템</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -276,9 +277,121 @@ tbody tr:hover td{background:#f8fafc}
 @media(max-width:1100px){.insp-layout{grid-template-columns:1fr}}
 @media(max-width:900px){.grid3{grid-template-columns:1fr 1fr}.sidebar{width:60px}.s-logo-text,.nav-item span,.s-section,.s-user-info,.db-label{display:none}.main{margin-left:60px}}
 @media(max-width:640px){.grid2{grid-template-columns:1fr}.grid4{grid-template-columns:1fr 1fr}}
+/* ── Auth ── */
+.auth-screen{position:fixed;inset:0;background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%);display:flex;align-items:center;justify-content:center;z-index:2000}
+.auth-card{background:#fff;border-radius:16px;padding:40px;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+.auth-logo{text-align:center;margin-bottom:28px}
+.auth-logo-icon{width:56px;height:56px;background:var(--primary);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;color:#fff;font-size:24px}
+.auth-logo h2{font-size:20px;font-weight:700;margin:0 0 4px}
+.auth-logo p{font-size:12px;color:var(--text-2);margin:0}
+.auth-err{background:#fef2f2;border:1px solid #fecaca;color:#dc2626;padding:10px 12px;border-radius:8px;font-size:13px;margin-bottom:12px;display:none}
+.auth-link{text-align:center;font-size:13px;color:var(--text-2);margin-top:16px}
+.auth-link a{color:var(--primary-light);text-decoration:none;font-weight:600}
+/* ── Excel Modal ── */
+.xl-modal{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1500;display:none;align-items:center;justify-content:center}
+.xl-modal.open{display:flex}
+.xl-box{background:#fff;border-radius:14px;padding:28px;width:92%;max-width:980px;max-height:88vh;overflow-y:auto}
+.xl-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+.drop-zone{border:2px dashed var(--border);border-radius:10px;padding:40px;text-align:center;cursor:pointer;transition:all .2s}
+.drop-zone:hover,.drop-zone.drag{border-color:var(--primary-light);background:#eff6ff}
+.drop-zone i{font-size:36px;color:#94a3b8;margin-bottom:10px;display:block}
+.xl-table{width:100%;border-collapse:collapse;font-size:12px}
+.xl-table th{background:#f8fafc;padding:8px 10px;border:1px solid var(--border);font-weight:600;white-space:nowrap;text-align:left}
+.xl-table td{padding:7px 10px;border:1px solid var(--border);white-space:nowrap}
+.xl-table tr.xl-ok td{background:#f0fdf4}
+.xl-table tr.xl-err td{background:#fef2f2}
+.xl-badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+.xl-badge.ok{background:#dcfce7;color:#16a34a}
+.xl-badge.err{background:#fee2e2;color:#dc2626}
 </style>
 </head>
 <body>
+
+<!-- Auth Screen -->
+<div class="auth-screen" id="auth-screen">
+  <!-- Login -->
+  <div class="auth-card" id="auth-login">
+    <div class="auth-logo">
+      <div class="auth-logo-icon"><i class="fa-solid fa-shield-halved"></i></div>
+      <h2>부품 불량 이력</h2>
+      <p>Quality Management System</p>
+    </div>
+    <div class="form-group">
+      <label class="form-label">이메일</label>
+      <input class="form-input" id="au-email" type="email" placeholder="ID@ajw.co.kr" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <div class="form-group">
+      <label class="form-label">비밀번호</label>
+      <div class="input-group">
+        <input class="form-input" id="au-pw" type="text" style="-webkit-text-security:disc" placeholder="비밀번호 입력" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+        <button class="btn btn-ghost btn-sm" type="button" onclick="toggleAuthPw('au-pw','au-pw-eye')"><i id="au-pw-eye" class="fa-regular fa-eye"></i></button>
+      </div>
+    </div>
+    <div class="auth-err" id="login-err"></div>
+    <button class="btn btn-primary w100" id="login-btn" onclick="doLogin()"><i class="fa-solid fa-right-to-bracket"></i> 로그인</button>
+    <div class="auth-link">계정이 없으신가요? <a href="#" onclick="showAuthCard('signup');return false">회원가입</a></div>
+  </div>
+  <!-- Signup -->
+  <div class="auth-card" id="auth-signup" style="display:none">
+    <div class="auth-logo">
+      <div class="auth-logo-icon"><i class="fa-solid fa-user-plus"></i></div>
+      <h2>회원가입</h2>
+      <p>@ajw.co.kr 계정으로 가입하세요</p>
+    </div>
+    <div class="form-group">
+      <label class="form-label">이름</label>
+      <input class="form-input" id="su-name" type="text" placeholder="홍길동">
+    </div>
+    <div class="form-group">
+      <label class="form-label">이메일</label>
+      <input class="form-input" id="su-email" type="email" placeholder="ID@ajw.co.kr" autocomplete="username">
+    </div>
+    <div class="form-group">
+      <label class="form-label">비밀번호 <span class="text-muted text-xs">(8자 이상)</span></label>
+      <div class="input-group">
+        <input class="form-input" id="su-pw" type="text" style="-webkit-text-security:disc" placeholder="8자 이상" autocomplete="new-password">
+        <button class="btn btn-ghost btn-sm" type="button" onclick="toggleAuthPw('su-pw','su-pw-eye')"><i id="su-pw-eye" class="fa-regular fa-eye"></i></button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">비밀번호 확인</label>
+      <div class="input-group">
+        <input class="form-input" id="su-pw2" type="text" style="-webkit-text-security:disc" placeholder="비밀번호 재입력" autocomplete="new-password" onkeydown="if(event.key==='Enter')doSignup()">
+        <button class="btn btn-ghost btn-sm" type="button" onclick="toggleAuthPw('su-pw2','su-pw2-eye')"><i id="su-pw2-eye" class="fa-regular fa-eye"></i></button>
+      </div>
+    </div>
+    <div class="auth-err" id="signup-err"></div>
+    <button class="btn btn-primary w100" id="signup-btn" onclick="doSignup()"><i class="fa-solid fa-user-plus"></i> 회원가입</button>
+    <div class="auth-link"><a href="#" onclick="showAuthCard('login');return false">← 로그인으로 돌아가기</a></div>
+  </div>
+</div>
+
+<!-- Excel Import Modal -->
+<div class="xl-modal" id="xl-modal">
+  <div class="xl-box">
+    <div class="xl-header">
+      <div style="font-size:18px;font-weight:700"><i class="fa-solid fa-file-excel" style="color:#16a34a"></i> Excel 가져오기</div>
+      <button class="btn btn-ghost btn-sm" onclick="closeXlModal()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="drop-zone" id="xl-drop" onclick="document.getElementById('xl-file-input').click()" ondragover="xlDragOver(event)" ondragleave="xlDragLeave(event)" ondrop="xlDrop(event)">
+      <i class="fa-solid fa-cloud-arrow-up"></i>
+      <div style="font-weight:600;margin-bottom:4px">클릭하거나 파일을 드래그하세요</div>
+      <div class="text-sm text-muted">.xlsx, .xls 파일 지원</div>
+    </div>
+    <input type="file" id="xl-file-input" accept=".xlsx,.xls" style="display:none" onchange="handleXlFile(this.files[0])">
+    <div style="margin-top:12px;display:flex;gap:8px;justify-content:space-between;align-items:center">
+      <span class="text-sm text-muted">컬럼 순서: 부품번호 · 입고차수 · 입고일 · 입고수량 · 검사수량 · 불량수량 · 결과 · 불량유형 · 메모 · 조치</span>
+      <button class="btn btn-outline btn-sm" onclick="downloadXlTemplate()"><i class="fa-solid fa-download"></i> 양식 다운로드</button>
+    </div>
+    <div id="xl-preview" style="display:none;margin-top:20px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div style="font-weight:600" id="xl-preview-title"></div>
+        <button class="btn btn-primary btn-sm" id="xl-save-btn" onclick="saveXlData()"><i class="fa-solid fa-floppy-disk"></i> 저장</button>
+      </div>
+      <div class="table-wrap"><table class="xl-table"><thead><tr><th>#</th><th>부품번호</th><th>입고차수</th><th>입고일</th><th>입고수량</th><th>검사수량</th><th>불량수량</th><th>결과</th><th>불량유형</th><th>메모</th><th>조치</th><th>상태</th></tr></thead><tbody id="xl-tbody"></tbody></table></div>
+    </div>
+  </div>
+</div>
 
 <!-- Loading Overlay -->
 <div class="loading-overlay hidden" id="loading-overlay">
@@ -305,11 +418,12 @@ tbody tr:hover td{background:#f8fafc}
   </div>
   <div class="s-footer">
     <div class="s-user">
-      <div class="s-user-avatar">Q</div>
+      <div class="s-user-avatar" id="s-avatar">Q</div>
       <div class="s-user-info">
-        <div class="s-user-name">품질관리시스템</div>
-        <div class="s-user-role">Quality Management</div>
+        <div class="s-user-name" id="s-uname">품질관리시스템</div>
+        <div class="s-user-role" id="s-urole">Quality Management</div>
       </div>
+      <button class="btn btn-ghost btn-sm" title="로그아웃" onclick="doLogout()" style="margin-left:auto;color:#94a3b8;flex-shrink:0"><i class="fa-solid fa-right-from-bracket"></i></button>
     </div>
     <div class="db-status">
       <div class="db-dot" id="db-dot"></div>
@@ -365,6 +479,9 @@ tbody tr:hover td{background:#f8fafc}
 
     <!-- ══ INSPECTION ══ -->
     <div class="page" id="page-inspection">
+      <div style="margin-bottom:12px;text-align:right">
+        <button class="btn btn-outline btn-sm" onclick="openXlModal()"><i class="fa-solid fa-file-excel" style="color:#16a34a"></i> Excel 가져오기</button>
+      </div>
       <div class="insp-layout">
         <div>
           <div class="card mb16">
@@ -637,6 +754,7 @@ const DB = { parts:[], defectTypes:[], inspections:{} };
 // ── State ─────────────────────────────────────────────────────────────
 let currentPage='dashboard', currentPartNo=null;
 let selectedResult=null, selectedDefectTypes=[];
+let currentUser=null;
 let rateTrendChart=null, defectTypeChart=null, top5Chart=null, defectDistChart=null;
 
 // ── 날짜 설정 ─────────────────────────────────────────────────────────
@@ -645,7 +763,6 @@ let rateTrendChart=null, defectTypeChart=null, top5Chart=null, defectDistChart=n
   document.getElementById('tb-date').textContent = today.toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric',weekday:'long'});
   const ymd = '2026-05-13';
   document.getElementById('inf-date').value = ymd;
-  document.getElementById('reg-date').value = ymd;
   document.getElementById('rp-start').value = '2026-01-01';
   document.getElementById('rp-end').value   = ymd;
 })();
@@ -653,7 +770,15 @@ let rateTrendChart=null, defectTypeChart=null, top5Chart=null, defectDistChart=n
 // ── DB 연결 및 초기화 ─────────────────────────────────────────────────
 async function initApp(){
   history.replaceState({page:'dashboard'}, '', '#dashboard');
-  await startApp();
+  const { data:{ session } } = await sb.auth.getSession();
+  if(session){
+    currentUser = session.user;
+    updateSidebarUser(session.user);
+    document.getElementById('auth-screen').style.display = 'none';
+    await startApp();
+  } else {
+    document.getElementById('auth-screen').style.display = 'flex';
+  }
 }
 
 async function startApp(){
@@ -1262,13 +1387,206 @@ document.querySelectorAll('.overlay').forEach(o=>{
   o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('show')});
 });
 
-// ── 시작 ─────────────────────────────────────────────────────────────
-// Enter 키로 로그인
-document.addEventListener('keydown', e => {
-  if(e.key === 'Enter' && !document.getElementById('login-screen').classList.contains('hidden')){
-    login();
+// ── Auth ─────────────────────────────────────────────────────────────
+function showAuthCard(which){
+  document.getElementById('auth-login').style.display  = which==='login'  ? '' : 'none';
+  document.getElementById('auth-signup').style.display = which==='signup' ? '' : 'none';
+  document.getElementById('login-err').style.display   = 'none';
+  document.getElementById('signup-err').style.display  = 'none';
+}
+
+function toggleAuthPw(inputId, iconId){
+  const inp = document.getElementById(inputId);
+  const ico = document.getElementById(iconId);
+  const visible = inp.style.webkitTextSecurity === 'none';
+  inp.style.webkitTextSecurity = visible ? 'disc' : 'none';
+  ico.className = visible ? 'fa-regular fa-eye' : 'fa-regular fa-eye-slash';
+}
+
+async function doLogin(){
+  const email = document.getElementById('au-email').value.trim();
+  const pw    = document.getElementById('au-pw').value;
+  const errEl = document.getElementById('login-err');
+  errEl.style.display = 'none';
+  if(!email||!pw){ errEl.textContent='이메일과 비밀번호를 입력하세요'; errEl.style.display=''; return; }
+  const btn = document.getElementById('login-btn');
+  btn.disabled=true; btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> 로그인 중...';
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: pw });
+  btn.disabled=false; btn.innerHTML='<i class="fa-solid fa-right-to-bracket"></i> 로그인';
+  if(error){
+    errEl.textContent = error.message.includes('Invalid') ? '이메일 또는 비밀번호가 올바르지 않습니다' : error.message;
+    errEl.style.display=''; return;
   }
-});
+  currentUser = data.user;
+  updateSidebarUser(data.user);
+  document.getElementById('auth-screen').style.display = 'none';
+  await startApp();
+}
+
+async function doSignup(){
+  const name  = document.getElementById('su-name').value.trim();
+  const email = document.getElementById('su-email').value.trim();
+  const pw    = document.getElementById('su-pw').value;
+  const pw2   = document.getElementById('su-pw2').value;
+  const errEl = document.getElementById('signup-err');
+  errEl.style.display = 'none';
+  if(!name){ errEl.textContent='이름을 입력하세요'; errEl.style.display=''; return; }
+  if(!email.endsWith('@ajw.co.kr')){ errEl.textContent='@ajw.co.kr 이메일만 가입 가능합니다'; errEl.style.display=''; return; }
+  if(pw.length < 8){ errEl.textContent='비밀번호는 8자 이상이어야 합니다'; errEl.style.display=''; return; }
+  if(pw !== pw2){ errEl.textContent='비밀번호가 일치하지 않습니다'; errEl.style.display=''; return; }
+  const btn = document.getElementById('signup-btn');
+  btn.disabled=true; btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> 처리 중...';
+  const { data, error } = await sb.auth.signUp({ email, password: pw, options:{ data:{ name } } });
+  btn.disabled=false; btn.innerHTML='<i class="fa-solid fa-user-plus"></i> 회원가입';
+  if(error){ errEl.textContent=error.message; errEl.style.display=''; return; }
+  showToast('회원가입 완료! 로그인해주세요.','success');
+  showAuthCard('login');
+  document.getElementById('au-email').value = email;
+}
+
+async function doLogout(){
+  if(!confirm('로그아웃 하시겠습니까?')) return;
+  await sb.auth.signOut();
+  currentUser = null;
+  document.getElementById('auth-screen').style.display = 'flex';
+  showAuthCard('login');
+}
+
+function updateSidebarUser(user){
+  if(!user) return;
+  const name = user.user_metadata?.name || user.email.split('@')[0];
+  document.getElementById('s-avatar').textContent = name.charAt(0).toUpperCase();
+  document.getElementById('s-uname').textContent  = name;
+  document.getElementById('s-urole').textContent  = user.email;
+}
+
+// ── Excel 가져오기 ────────────────────────────────────────────────────
+let xlParsedRows = [];
+
+function openXlModal(){
+  document.getElementById('xl-modal').classList.add('open');
+  document.getElementById('xl-preview').style.display = 'none';
+  document.getElementById('xl-file-input').value = '';
+  xlParsedRows = [];
+}
+
+function closeXlModal(){
+  document.getElementById('xl-modal').classList.remove('open');
+}
+
+function xlDragOver(e){ e.preventDefault(); document.getElementById('xl-drop').classList.add('drag'); }
+function xlDragLeave(){ document.getElementById('xl-drop').classList.remove('drag'); }
+function xlDrop(e){ e.preventDefault(); xlDragLeave(); handleXlFile(e.dataTransfer.files[0]); }
+
+function xlFormatDate(val){
+  if(!val) return '';
+  if(typeof val === 'number'){
+    const d = new Date(Math.round((val - 25569) * 86400 * 1000));
+    return d.toISOString().slice(0,10);
+  }
+  const s = String(val);
+  const m = s.match(/(\d{4})[.\-\/](\d{1,2})[.\-\/](\d{1,2})/);
+  if(m) return `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;
+  return s;
+}
+
+function xlMapResult(v){
+  const m={'합격':'pass','불합격':'fail','특채':'special','pass':'pass','fail':'fail','special':'special'};
+  return m[String(v).toLowerCase().trim()] || 'fail';
+}
+
+function handleXlFile(file){
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb = XLSX.read(e.target.result, {type:'binary'});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, {defval:''});
+      if(!rows.length){ showToast('데이터가 없습니다','warning'); return; }
+      xlParsedRows = rows.map(r => ({
+        partNo:  String(r['부품번호']||'').trim().toUpperCase(),
+        lot:     String(r['입고차수']||'').trim(),
+        date:    xlFormatDate(r['입고일']),
+        inQty:   parseInt(r['입고수량'])||0,
+        inspQty: parseInt(r['검사수량'])||0,
+        defQty:  parseInt(r['불량수량'])||0,
+        result:  xlMapResult(r['결과']),
+        types:   String(r['불량유형']||'').split(',').map(t=>t.trim()).filter(Boolean),
+        notes:   String(r['메모']||''),
+        action:  String(r['조치']||''),
+      }));
+      renderXlPreview(xlParsedRows);
+    } catch(err){ showToast('파일 읽기 오류: '+err.message,'error'); }
+  };
+  reader.readAsBinaryString(file);
+}
+
+function renderXlPreview(rows){
+  const resultLabel = {pass:'합격',fail:'불합격',special:'특채'};
+  const tbody = document.getElementById('xl-tbody');
+  tbody.innerHTML = rows.map((r,i) => {
+    const part  = DB.parts.find(p => p.partNo === r.partNo);
+    const isOk  = !!part && !!r.date;
+    const badge = isOk
+      ? `<span class="xl-badge ok">정상</span>`
+      : `<span class="xl-badge err">${!part ? '부품 없음' : '날짜 오류'}</span>`;
+    return `<tr class="${isOk?'xl-ok':'xl-err'}">
+      <td>${i+1}</td><td>${r.partNo}</td><td>${r.lot||'-'}</td><td>${r.date||'-'}</td>
+      <td>${r.inQty}</td><td>${r.inspQty}</td><td>${r.defQty}</td>
+      <td>${resultLabel[r.result]||r.result}</td>
+      <td>${r.types.join(', ')||'-'}</td>
+      <td>${r.notes||'-'}</td><td>${r.action||'-'}</td>
+      <td>${badge}</td>
+    </tr>`;
+  }).join('');
+  const validCount = rows.filter(r => DB.parts.find(p=>p.partNo===r.partNo) && r.date).length;
+  document.getElementById('xl-preview-title').textContent = `${rows.length}건 파싱 완료 (저장 가능: ${validCount}건)`;
+  document.getElementById('xl-preview').style.display = '';
+}
+
+async function saveXlData(){
+  const valid = xlParsedRows.filter(r => DB.parts.find(p=>p.partNo===r.partNo) && r.date);
+  if(!valid.length){ showToast('저장 가능한 데이터가 없습니다','warning'); return; }
+  const btn = document.getElementById('xl-save-btn');
+  btn.disabled=true; btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> 저장 중...';
+  let saved=0, failed=0;
+  for(const r of valid){
+    const part = DB.parts.find(p=>p.partNo===r.partNo);
+    const inspQty = r.inspQty || r.inQty;
+    const rate = inspQty > 0 ? (r.defQty/inspQty*100) : 0;
+    const {data:newInsp, error} = await sb.from('inspections').insert({
+      part_id:part.id, lot_no:r.lot, incoming_date:r.date,
+      incoming_qty:r.inQty, inspect_qty:inspQty, defect_qty:r.defQty,
+      defect_rate:parseFloat(rate.toFixed(2)), result:r.result,
+      inspector: currentUser ? (currentUser.user_metadata?.name || currentUser.email.split('@')[0]) : '-',
+      notes:r.notes, action:r.action,
+    }).select().single();
+    if(error){ failed++; continue; }
+    if(r.types.length > 0)
+      await sb.from('defect_details').insert(r.types.map(t=>({inspection_id:newInsp.id,defect_type_name:t,defect_count:1})));
+    await updatePartGrade(part.id, r.partNo);
+    saved++;
+  }
+  await loadAllData();
+  btn.disabled=false; btn.innerHTML='<i class="fa-solid fa-floppy-disk"></i> 저장';
+  showToast(`${saved}건 저장 완료${failed?`, ${failed}건 실패`:''}`, saved>0?'success':'error');
+  if(saved>0) closeXlModal();
+}
+
+function downloadXlTemplate(){
+  const ws = XLSX.utils.aoa_to_sheet([
+    ['부품번호','입고차수','입고일','입고수량','검사수량','불량수량','결과','불량유형','메모','조치'],
+    ['P-20341','27차','2026-05-13',100,100,3,'불합격','외관 불량,치수 불량','불량 발생 상세 내용','전량 반품'],
+    ['P-30156','31차','2026-05-13',200,200,0,'합격','','',''],
+  ]);
+  ws['!cols'] = [{wch:12},{wch:10},{wch:14},{wch:10},{wch:10},{wch:10},{wch:8},{wch:20},{wch:20},{wch:12}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '검사데이터');
+  XLSX.writeFile(wb, '입고검사_양식.xlsx');
+}
+
+// ── 시작 ─────────────────────────────────────────────────────────────
 initApp();
 </script>
 </body>

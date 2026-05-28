@@ -297,7 +297,6 @@ tbody tr:hover td{background:#f8fafc}
     <div class="nav-item active" onclick="navigate('dashboard')"><i class="fa-solid fa-chart-line"></i><span>대시보드</span></div>
     <div class="s-section">검사</div>
     <div class="nav-item" onclick="navigate('inspection')"><i class="fa-solid fa-magnifying-glass"></i><span>입고 검사 등록</span></div>
-    <div class="nav-item" onclick="navigate('defect-reg')"><i class="fa-solid fa-triangle-exclamation"></i><span>불량 등록</span></div>
     <div class="s-section">분석</div>
     <div class="nav-item" onclick="navigate('history')"><i class="fa-solid fa-clock-rotate-left"></i><span>부품 이력 조회</span></div>
     <div class="nav-item" onclick="navigate('reports')"><i class="fa-solid fa-file-chart-column"></i><span>부적합 리포트</span></div>
@@ -452,45 +451,6 @@ tbody tr:hover td{background:#f8fafc}
               <div class="checklist-item"><input type="checkbox" id="sc5"><label for="sc5">로트 라벨 및 성적서 확인</label></div>
             </div>
           </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ══ DEFECT REG ══ -->
-    <div class="page" id="page-defect-reg">
-      <div style="max-width:800px">
-        <div class="card mb16">
-          <div class="card-title mb16"><i class="fa-solid fa-truck-ramp-box"></i> 입고 정보</div>
-          <div class="grid2">
-            <div class="form-group"><label class="form-label">부품번호 *</label><div class="input-group"><input class="form-input" id="reg-partno" placeholder="P-XXXXX" oninput="regLookupPart(this.value)"><button class="btn btn-outline btn-sm" onclick="regLookupPart(document.getElementById('reg-partno').value)"><i class="fa-solid fa-magnifying-glass"></i></button></div></div>
-            <div class="form-group"><label class="form-label">부품명</label><input class="form-input" id="reg-partname" readonly placeholder="자동 입력"></div>
-            <div class="form-group"><label class="form-label">공급사</label><input class="form-input" id="reg-supplier" readonly placeholder="자동 입력"></div>
-            <div class="form-group"><label class="form-label">입고 차수 *</label><input class="form-input" id="reg-lot" placeholder="예: 27차"></div>
-            <div class="form-group"><label class="form-label">입고일 *</label><input class="form-input" type="date" id="reg-date"></div>
-            <div class="form-group"><label class="form-label">입고 수량</label><input class="form-input" type="number" id="reg-inqty" placeholder="0"></div>
-            <div class="form-group"><label class="form-label">검사 수량</label><input class="form-input" type="number" id="reg-inspqty" placeholder="0"></div>
-            <div class="form-group"><label class="form-label">불량 수량 *</label><input class="form-input" type="number" id="reg-defqty" placeholder="0"></div>
-          </div>
-        </div>
-        <div class="card mb16">
-          <div class="card-title mb12"><i class="fa-solid fa-tags"></i> 불량 유형 선택 *</div>
-          <div class="chip-wrap" id="reg-chips"></div>
-        </div>
-        <div class="card mb16">
-          <div class="card-title mb12"><i class="fa-solid fa-file-lines"></i> 불량 상세 기술서</div>
-          <div class="form-group"><label class="form-label">부적합 내용</label><textarea class="form-textarea" id="reg-desc" style="min-height:100px" placeholder="불량 발생 위치, 현상, 추정 원인 등 상세히 기술..."></textarea></div>
-          <div class="form-group"><label class="form-label">조치 내용 *</label>
-            <div class="chip-wrap">
-              <button class="chip" id="rc-1" onclick="selectAction('전량 반품','rc-1')">전량 반품</button>
-              <button class="chip" id="rc-2" onclick="selectAction('선별 후 사용','rc-2')">선별 후 사용</button>
-              <button class="chip" id="rc-3" onclick="selectAction('특채','rc-3')">특채</button>
-              <button class="chip" id="rc-4" onclick="selectAction('폐기','rc-4')">폐기</button>
-            </div>
-          </div>
-        </div>
-        <div class="flex gap8">
-          <button class="btn btn-outline flex-1" onclick="clearRegForm()"><i class="fa-solid fa-rotate-left"></i> 초기화</button>
-          <button class="btn btn-primary" style="flex:2" id="btn-submit-reg" onclick="submitDefectReg()"><i class="fa-solid fa-floppy-disk"></i> 불량 데이터 저장</button>
         </div>
       </div>
     </div>
@@ -676,7 +636,7 @@ const DB = { parts:[], defectTypes:[], inspections:{} };
 
 // ── State ─────────────────────────────────────────────────────────────
 let currentPage='dashboard', currentPartNo=null;
-let selectedResult=null, selectedDefectTypes=[], selectedRegAction=null;
+let selectedResult=null, selectedDefectTypes=[];
 let rateTrendChart=null, defectTypeChart=null, top5Chart=null, defectDistChart=null;
 
 // ── 날짜 설정 ─────────────────────────────────────────────────────────
@@ -813,11 +773,10 @@ function navigate(page, pushState=true){
     if(n.getAttribute('onclick')?.includes("'"+page+"'")) n.classList.add('active');
   });
   currentPage=page;
-  const titles={dashboard:'대시보드',inspection:'입고 검사 등록','defect-reg':'불량 등록',history:'부품 이력 조회',reports:'부적합 리포트',admin:'관리'};
+  const titles={dashboard:'대시보드',inspection:'입고 검사 등록',history:'부품 이력 조회',reports:'부적합 리포트',admin:'관리'};
   document.getElementById('page-title').textContent = titles[page]||page;
   if(page==='dashboard') initDashboard();
   if(page==='history')   initHistory();
-  if(page==='defect-reg') initRegForm();
   if(page==='admin')     initAdmin();
   if(page==='reports')   initReports();
   if(page==='inspection') initInspectionPage();
@@ -1055,65 +1014,6 @@ async function submitInspection(){
 }
 
 // ── Defect Registration ─────────────────────────────────────────────────
-function initRegForm(){
-  buildDefectChips('reg-chips');
-  document.querySelectorAll('#reg-chips .chip').forEach(c=>c.onclick=function(){toggleRegChip(this)});
-}
-
-let selectedRegTypes=[];
-function toggleRegChip(el){
-  if(el.classList.contains('selected')){el.classList.remove('selected');selectedRegTypes=selectedRegTypes.filter(t=>t!==el.textContent)}
-  else{el.classList.add('selected');selectedRegTypes.push(el.textContent)}
-}
-
-function selectAction(action, btnId){
-  selectedRegAction=action;
-  ['rc-1','rc-2','rc-3','rc-4'].forEach(id=>document.getElementById(id).classList.remove('selected'));
-  document.getElementById(btnId).classList.add('selected');
-}
-
-function regLookupPart(v){
-  const p=DB.parts.find(x=>x.partNo===v.trim().toUpperCase());
-  document.getElementById('reg-partname').value=p?p.partName:'';
-  document.getElementById('reg-supplier').value=p?p.supplier:'';
-}
-
-function clearRegForm(){
-  ['reg-partno','reg-partname','reg-supplier','reg-lot','reg-inqty','reg-inspqty','reg-defqty','reg-desc'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('reg-date').value='2026-05-13';
-  document.querySelectorAll('#reg-chips .chip').forEach(c=>c.classList.remove('selected'));
-  ['rc-1','rc-2','rc-3','rc-4'].forEach(id=>document.getElementById(id).classList.remove('selected'));
-  selectedRegTypes=[]; selectedRegAction=null;
-}
-
-async function submitDefectReg(){
-  const pn=document.getElementById('reg-partno').value.trim().toUpperCase();
-  if(!pn){showToast('부품번호를 입력하세요','warning');return}
-  if(selectedRegTypes.length===0){showToast('불량 유형을 하나 이상 선택하세요','warning');return}
-  if(!selectedRegAction){showToast('조치 내용을 선택하세요','warning');return}
-  const part=DB.parts.find(p=>p.partNo===pn);
-  if(!part){showToast('등록되지 않은 부품입니다','warning');return}
-  const btn=document.getElementById('btn-submit-reg');
-  btn.disabled=true; btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> 저장 중...';
-  const inspQty=parseInt(document.getElementById('reg-inspqty').value)||0;
-  const defQty=parseInt(document.getElementById('reg-defqty').value)||0;
-  const rate=inspQty>0?(defQty/inspQty*100):0;
-  const {data:newInsp,error}=await sb.from('inspections').insert({
-    part_id:part.id, lot_no:document.getElementById('reg-lot').value,
-    incoming_date:document.getElementById('reg-date').value,
-    incoming_qty:parseInt(document.getElementById('reg-inqty').value)||0,
-    inspect_qty:inspQty, defect_qty:defQty, defect_rate:parseFloat(rate.toFixed(2)),
-    result:'fail', inspector: '-',
-    notes:document.getElementById('reg-desc').value, action:selectedRegAction,
-  }).select().single();
-  if(error){showToast('저장 실패: '+error.message,'error');btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-floppy-disk"></i> 불량 데이터 저장';return}
-  await sb.from('defect_details').insert(selectedRegTypes.map(t=>({inspection_id:newInsp.id,defect_type_name:t,defect_count:1})));
-  await updatePartGrade(part.id, pn);
-  await loadAllData();
-  showToast('불량 데이터가 저장되었습니다','success');
-  btn.disabled=false; btn.innerHTML='<i class="fa-solid fa-floppy-disk"></i> 불량 데이터 저장';
-  clearRegForm();
-}
 
 // ── History ────────────────────────────────────────────────────────────
 function initHistory(){

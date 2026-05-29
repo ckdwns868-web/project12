@@ -278,6 +278,13 @@ tbody tr:hover td{background:#f8fafc}
 @media(max-width:1100px){.insp-layout{grid-template-columns:1fr}}
 @media(max-width:900px){.grid3{grid-template-columns:1fr 1fr}.sidebar{width:60px}.s-logo-text,.nav-item span,.s-section,.s-user-info,.db-label{display:none}.main{margin-left:60px}}
 @media(max-width:640px){.grid2{grid-template-columns:1fr}.grid4{grid-template-columns:1fr 1fr}}
+.search-dropdown{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:200;max-height:280px;overflow-y:auto;margin-top:4px}
+.search-dropdown-item{padding:10px 14px;cursor:pointer;border-bottom:1px solid #f1f5f9;display:flex;flex-direction:column;gap:2px}
+.search-dropdown-item:last-child{border-bottom:none}
+.search-dropdown-item:hover{background:#eff6ff}
+.search-dropdown-item .sd-code{font-weight:700;font-size:13px;color:var(--primary)}
+.search-dropdown-item .sd-name{font-size:12px;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.search-dropdown-empty{padding:16px;text-align:center;color:var(--text-3);font-size:13px}
 /* ── Auth ── */
 .auth-screen{position:fixed;inset:0;background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%);display:flex;align-items:center;justify-content:center;z-index:2000}
 .auth-card{background:#fff;border-radius:16px;padding:40px;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,.4)}
@@ -507,13 +514,12 @@ tbody tr:hover td{background:#f8fafc}
         <div>
           <div class="card mb16">
             <div class="card-header"><div class="card-title"><i class="fa-solid fa-barcode"></i> 품목코드 입력</div></div>
-            <div class="input-group">
-              <input class="form-input large" id="insp-partno" placeholder="품목코드 입력" onkeydown="if(event.key==='Enter')lookupPart(this.value)" autocomplete="off">
-              <button class="btn btn-primary" onclick="lookupPart(document.getElementById('insp-partno').value)"><i class="fa-solid fa-magnifying-glass"></i> 조회</button>
-            </div>
-            <div class="flex-center gap8" style="margin-top:10px;flex-wrap:wrap">
-              <span class="text-xs text-muted">등록 부품:</span>
-              <div id="quick-part-btns" class="flex gap8 flex-wrap"></div>
+            <div style="position:relative">
+              <div class="input-group">
+                <input class="form-input large" id="insp-partno" placeholder="품목코드 또는 품목명 입력" oninput="onPartSearch(this.value)" onkeydown="onPartKeydown(event)" autocomplete="off">
+                <button class="btn btn-primary" onclick="lookupPart(document.getElementById('insp-partno').value)"><i class="fa-solid fa-magnifying-glass"></i> 조회</button>
+              </div>
+              <div class="search-dropdown" id="part-dropdown" style="display:none"></div>
             </div>
           </div>
           <div class="card mb16" id="insp-part-info" style="display:none">
@@ -1082,6 +1088,64 @@ function clearPart(){
   ['btn-pass','btn-fail','btn-special'].forEach(id=>document.getElementById(id).className='action-btn');
   document.getElementById('fail-section').style.display='none';
 }
+
+let dropdownIdx = -1;
+
+function onPartSearch(val){
+  const q = val.trim().toLowerCase();
+  const dd = document.getElementById('part-dropdown');
+  if(!q){ dd.style.display='none'; return; }
+  const matches = DB.parts.filter(p =>
+    p.partNo.toLowerCase().includes(q) || p.partName.toLowerCase().includes(q)
+  ).slice(0, 50);
+  if(!matches.length){
+    dd.innerHTML = '<div class="search-dropdown-empty">검색 결과 없음</div>';
+  } else {
+    dd.innerHTML = matches.map((p,i) =>
+      `<div class="search-dropdown-item" onmousedown="selectDropdownPart('${p.partNo}')" data-idx="${i}">
+        <span class="sd-code">${p.partNo}</span>
+        <span class="sd-name">${p.partName}</span>
+      </div>`
+    ).join('');
+  }
+  dd.style.display = '';
+  dropdownIdx = -1;
+}
+
+function onPartKeydown(e){
+  const dd = document.getElementById('part-dropdown');
+  const items = dd.querySelectorAll('.search-dropdown-item');
+  if(e.key === 'ArrowDown'){
+    e.preventDefault();
+    dropdownIdx = Math.min(dropdownIdx+1, items.length-1);
+    items.forEach((el,i) => el.style.background = i===dropdownIdx?'#eff6ff':'');
+  } else if(e.key === 'ArrowUp'){
+    e.preventDefault();
+    dropdownIdx = Math.max(dropdownIdx-1, 0);
+    items.forEach((el,i) => el.style.background = i===dropdownIdx?'#eff6ff':'');
+  } else if(e.key === 'Enter'){
+    if(dropdownIdx >= 0 && items[dropdownIdx]){
+      const code = items[dropdownIdx].querySelector('.sd-code').textContent;
+      selectDropdownPart(code);
+    } else {
+      lookupPart(document.getElementById('insp-partno').value);
+    }
+  } else if(e.key === 'Escape'){
+    dd.style.display = 'none';
+  }
+}
+
+function selectDropdownPart(partNo){
+  document.getElementById('part-dropdown').style.display = 'none';
+  document.getElementById('insp-partno').value = partNo;
+  lookupPart(partNo);
+}
+
+// 드롭다운 외부 클릭 시 닫기
+document.addEventListener('click', e => {
+  if(!e.target.closest('#insp-partno') && !e.target.closest('#part-dropdown'))
+    document.getElementById('part-dropdown').style.display = 'none';
+});
 
 function lookupPart(partNo){
   const pn=(partNo||'').trim().toUpperCase();

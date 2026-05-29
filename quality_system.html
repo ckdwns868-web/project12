@@ -783,44 +783,6 @@ const SEED_DEFECT_TYPES = [
   {code:'D011',name:'수량 부족',     category:'기타'},
   {code:'D012',name:'기타',          category:'기타'},
 ];
-const SEED_PARTS = [
-  {part_no:'P-20341',part_name:'브라켓 A형',   supplier:'OO정밀',      category:'구조부품', grade:'C',last_incoming:'2026-04-12'},
-  {part_no:'P-10022',part_name:'볼트 M8x30',   supplier:'한국파스너',  category:'체결부품', grade:'A',last_incoming:'2026-04-28'},
-  {part_no:'P-30156',part_name:'실리콘 패킹',  supplier:'화인고무',    category:'밀봉부품', grade:'B',last_incoming:'2026-04-25'},
-  {part_no:'P-40089',part_name:'모터 브라켓',  supplier:'KM산업',      category:'구조부품', grade:'D',last_incoming:'2026-04-20'},
-  {part_no:'P-50203',part_name:'커넥터 10핀',  supplier:'성우전자',    category:'전장부품', grade:'A',last_incoming:'2026-05-02'},
-  {part_no:'P-60118',part_name:'고무 그로멧',  supplier:'화인고무',    category:'밀봉부품', grade:'B',last_incoming:'2026-04-15'},
-  {part_no:'P-70234',part_name:'스틸 샤프트',  supplier:'대성금속',    category:'회전부품', grade:'C',last_incoming:'2026-04-10'},
-  {part_no:'P-80045',part_name:'플라스틱 커버',supplier:'신흥플라스틱',category:'외장부품', grade:'B',last_incoming:'2026-05-01'},
-];
-const SEED_INSPECTIONS = {
-  'P-20341':[
-    {lot:'26차',date:'2026-04-12',inQty:500,inspQty:100,defQty:12,rate:4.2,result:'fail',types:['외관(스크래치)','포장 불량'],action:'선별 후 사용',inspector:'김민수',notes:'표면 스크래치 다수 발견. 포장재 손상으로 인한 2차 불량 추정.'},
-    {lot:'25차',date:'2026-03-12',inQty:300,inspQty:60,defQty:8,rate:3.8,result:'fail',types:['외관(스크래치)','치수 불량'],action:'선별 후 사용',inspector:'박정훈',notes:'치수 공차 초과 2건, 스크래치 6건.'},
-    {lot:'24차',date:'2026-02-20',inQty:400,inspQty:80,defQty:3,rate:1.2,result:'fail',types:['외관(스크래치)'],action:'특채',inspector:'김민수',notes:'미세 스크래치 3건, 기능 영향 없음으로 특채.'},
-    {lot:'23차',date:'2026-01-15',inQty:500,inspQty:100,defQty:0,rate:0,result:'pass',types:[],action:'-',inspector:'이영희',notes:'이상 없음.'},
-    {lot:'22차',date:'2025-12-10',inQty:400,inspQty:80,defQty:5,rate:2.1,result:'fail',types:['포장 불량'],action:'선별 후 사용',inspector:'박정훈',notes:'포장 불량으로 인한 표면 오염.'},
-  ],
-  'P-40089':[
-    {lot:'15차',date:'2026-04-20',inQty:200,inspQty:40,defQty:18,rate:8.5,result:'fail',types:['치수 불량','기능 불량'],action:'전량 반품',inspector:'김민수',notes:'주요 치수 도면 대비 +0.3mm 초과. 조립 불가.'},
-    {lot:'14차',date:'2026-03-25',inQty:200,inspQty:40,defQty:14,rate:7.2,result:'fail',types:['치수 불량','재질 불량'],action:'전량 반품',inspector:'이영희',notes:'재질 경도 불충족. 치수 불량 병발.'},
-    {lot:'13차',date:'2026-02-28',inQty:300,inspQty:60,defQty:11,rate:5.5,result:'fail',types:['치수 불량'],action:'선별 후 사용',inspector:'박정훈',notes:''},
-    {lot:'12차',date:'2026-01-20',inQty:200,inspQty:40,defQty:9,rate:4.5,result:'fail',types:['치수 불량','외관 불량'],action:'선별 후 사용',inspector:'김민수',notes:''},
-    {lot:'11차',date:'2025-12-05',inQty:200,inspQty:40,defQty:4,rate:2.0,result:'fail',types:['외관 불량'],action:'특채',inspector:'이영희',notes:''},
-  ],
-  'P-30156':[
-    {lot:'31차',date:'2026-04-25',inQty:1000,inspQty:200,defQty:4,rate:0.8,result:'fail',types:['치수 불량'],action:'특채',inspector:'김민수',notes:''},
-    {lot:'30차',date:'2026-03-20',inQty:800,inspQty:160,defQty:2,rate:0.4,result:'fail',types:['외관 불량'],action:'특채',inspector:'박정훈',notes:''},
-    {lot:'29차',date:'2026-02-15',inQty:1000,inspQty:200,defQty:0,rate:0,result:'pass',types:[],action:'-',inspector:'이영희',notes:''},
-  ],
-  'P-10022':[
-    {lot:'52차',date:'2026-04-28',inQty:5000,inspQty:500,defQty:2,rate:0.1,result:'fail',types:['치수 불량'],action:'특채',inspector:'김민수',notes:''},
-    {lot:'51차',date:'2026-03-30',inQty:5000,inspQty:500,defQty:0,rate:0,result:'pass',types:[],action:'-',inspector:'박정훈',notes:''},
-  ],
-  'P-50203':[
-    {lot:'8차',date:'2026-05-02',inQty:300,inspQty:60,defQty:0,rate:0,result:'pass',types:[],action:'-',inspector:'김민수',notes:''},
-  ],
-};
 
 // ── 로컬 캐시 ────────────────────────────────────────────────────────
 const DB = { parts:[], defectTypes:[], inspections:{} };
@@ -860,7 +822,6 @@ async function initApp(){
 async function startApp(){
   setLoading(true, '데이터베이스 연결 중...');
   try {
-    await seedIfEmpty();
     setLoading(true, '데이터 불러오는 중...');
     await loadAllData();
     setDbStatus(true);
@@ -874,38 +835,6 @@ async function startApp(){
   setLoading(false);
 }
 
-async function seedIfEmpty(){
-  const { count } = await sb.from('parts').select('*',{count:'exact',head:true});
-  if(count > 0) return;
-  setLoading(true, '초기 데이터 설정 중...');
-
-  // 불량 유형 코드
-  await sb.from('defect_type_codes').insert(SEED_DEFECT_TYPES);
-
-  // 부품 마스터
-  const { data: insertedParts } = await sb.from('parts').insert(SEED_PARTS).select();
-  if(!insertedParts) return;
-
-  // 입고 검사 + 불량 상세
-  for(const [partNo, inspList] of Object.entries(SEED_INSPECTIONS)){
-    const part = insertedParts.find(p => p.part_no === partNo);
-    if(!part) continue;
-    for(const insp of inspList){
-      const { data: newInsp } = await sb.from('inspections').insert({
-        part_id: part.id, lot_no: insp.lot, incoming_date: insp.date,
-        incoming_qty: insp.inQty, inspect_qty: insp.inspQty,
-        defect_qty: insp.defQty, defect_rate: insp.rate,
-        result: insp.result, inspector: insp.inspector,
-        notes: insp.notes, action: insp.action,
-      }).select().single();
-      if(newInsp && insp.types.length > 0){
-        await sb.from('defect_details').insert(
-          insp.types.map(t => ({inspection_id: newInsp.id, defect_type_name: t, defect_count: 1}))
-        );
-      }
-    }
-  }
-}
 
 async function fetchAllPages(query){
   const PAGE = 1000;

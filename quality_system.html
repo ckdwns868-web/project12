@@ -513,10 +513,10 @@ tbody tr:hover td{background:#f8fafc}
       <div class="insp-layout">
         <div>
           <div class="card mb16">
-            <div class="card-header"><div class="card-title"><i class="fa-solid fa-barcode"></i> 품목코드 입력</div></div>
+            <div class="card-header"><div class="card-title"><i class="fa-solid fa-barcode"></i> 품목코드 / 품목명 입력</div></div>
             <div style="position:relative">
               <div class="input-group">
-                <input class="form-input large" id="insp-partno" placeholder="품목코드 또는 품목명 입력" oninput="onPartSearch(this.value)" onkeydown="onPartKeydown(event)" autocomplete="off">
+                <input class="form-input large" id="insp-partno" placeholder="품목코드 또는 품목명으로 검색" oninput="onPartSearch(this.value)" onkeydown="onPartKeydown(event)" autocomplete="off">
                 <button class="btn btn-primary" onclick="lookupPart(document.getElementById('insp-partno').value)"><i class="fa-solid fa-magnifying-glass"></i> 조회</button>
               </div>
               <div class="search-dropdown" id="part-dropdown" style="display:none"></div>

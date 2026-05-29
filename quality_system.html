@@ -188,7 +188,7 @@ tbody tr:hover td{background:#f8fafc}
 .alert-danger{background:#fef2f2;border:1px solid #fca5a5;color:#991b1b}
 .alert-info{background:#eff6ff;border:1px solid #93c5fd;color:#1e40af}
 .alert-success{background:#f0fdf4;border:1px solid #86efac;color:#166534}
-.action-btns{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:12px}
+.action-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
 .action-btn{padding:10px;border-radius:var(--r);border:2px solid var(--border);background:#fff;cursor:pointer;text-align:center;font-size:12px;font-weight:600;transition:.2s;font-family:inherit;color:var(--text-2)}
 .action-btn:hover{border-color:var(--primary-light);background:#eff6ff;color:var(--primary-light)}
 .action-btn.selected-pass{border-color:#22c55e;background:#f0fdf4;color:#166534}
@@ -546,7 +546,6 @@ tbody tr:hover td{background:#f8fafc}
             <div class="action-btns">
               <button class="action-btn" id="btn-pass" onclick="selectResult('pass')"><i class="fa-solid fa-circle-check text-green"></i><br>합격</button>
               <button class="action-btn" id="btn-fail" onclick="selectResult('fail')"><i class="fa-solid fa-circle-xmark text-red"></i><br>불합격</button>
-              <button class="action-btn" id="btn-special" onclick="selectResult('special')"><i class="fa-solid fa-circle-exclamation text-orange"></i><br>특채</button>
             </div>
             <div id="fail-section" style="display:none;margin-top:16px">
               <div class="divider"></div>
@@ -555,7 +554,15 @@ tbody tr:hover td{background:#f8fafc}
               <div class="form-group" style="margin-top:14px"><label class="form-label">불량 수량</label><input class="form-input" type="number" id="inf-defqty" placeholder="0"></div>
               <div class="form-group"><label class="form-label">불량 상세 내용</label><textarea class="form-textarea" id="inf-notes" placeholder="불량 발생 내용, 위치, 추정 원인 등 상세 기술..."></textarea></div>
               <div class="form-group"><label class="form-label">조치 내용</label>
-                <select class="form-select" id="inf-action"><option value="">조치 선택</option><option>선별 후 사용</option><option>전량 반품</option><option>특채</option><option>폐기</option></select>
+                <select class="form-select" id="inf-action"><option value="">조치 선택</option><option>선별 후 사용</option><option>전량 반품</option><option>폐기</option></select>
+              </div>
+              <div class="form-group">
+                <label class="form-label"><i class="fa-solid fa-camera"></i> 불량 사진 <span class="text-muted text-xs">(선택, 최대 5장)</span></label>
+                <div id="defect-photo-preview" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px"></div>
+                <label style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:2px dashed var(--border);border-radius:8px;cursor:pointer;font-size:13px;color:var(--text-2);transition:.2s" onmouseover="this.style.borderColor='#2563eb'" onmouseout="this.style.borderColor='var(--border)'">
+                  <i class="fa-solid fa-plus"></i> 사진 추가
+                  <input type="file" id="defect-photos" accept="image/*" multiple style="display:none" onchange="previewDefectPhotos(this)">
+                </label>
               </div>
             </div>
             <button class="btn btn-primary w100" style="margin-top:8px" id="btn-submit-insp" onclick="submitInspection()"><i class="fa-solid fa-floppy-disk"></i> 검사 결과 저장</button>
@@ -1026,8 +1033,10 @@ function clearPart(){
   document.getElementById('hp-empty').style.display='block';
   document.getElementById('hp-result').style.display='none';
   document.getElementById('hp-none').style.display='none';
-  ['btn-pass','btn-fail','btn-special'].forEach(id=>document.getElementById(id).className='action-btn');
+  ['btn-pass','btn-fail'].forEach(id=>document.getElementById(id).className='action-btn');
   document.getElementById('fail-section').style.display='none';
+  document.getElementById('defect-photo-preview').innerHTML='';
+  document.getElementById('defect-photos').value='';
 }
 
 let dropdownIdx = -1;
@@ -1162,9 +1171,29 @@ function showHistoryPanel(pn, history, part){
     <div class="checklist-item"><input type="checkbox" id="chk${i}"><label for="chk${i}">${item}</label></div>`).join('');
 }
 
+function previewDefectPhotos(input){
+  const preview = document.getElementById('defect-photo-preview');
+  const files = Array.from(input.files).slice(0, 5);
+  preview.innerHTML = files.map((f, i) => {
+    const url = URL.createObjectURL(f);
+    return `<div style="position:relative">
+      <img src="${url}" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid var(--border);cursor:zoom-in" onclick="openImgFull('${url}')">
+      <button type="button" onclick="removeDefectPhoto(${i})" style="position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;background:#dc2626;color:#fff;border:none;cursor:pointer;font-size:10px;display:flex;align-items:center;justify-content:center;padding:0">×</button>
+    </div>`;
+  }).join('');
+}
+
+function removeDefectPhoto(idx){
+  const input = document.getElementById('defect-photos');
+  const dt = new DataTransfer();
+  Array.from(input.files).forEach((f, i) => { if(i !== idx) dt.items.add(f); });
+  input.files = dt.files;
+  previewDefectPhotos(input);
+}
+
 function selectResult(r){
   selectedResult=r;
-  ['btn-pass','btn-fail','btn-special'].forEach(id=>document.getElementById(id).className='action-btn');
+  ['btn-pass','btn-fail'].forEach(id=>document.getElementById(id).className='action-btn');
   document.getElementById('btn-'+r).className='action-btn selected-'+r;
   document.getElementById('fail-section').style.display=(r==='fail')?'block':'none';
 }

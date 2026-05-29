@@ -966,22 +966,26 @@ function initDashboard(){
 
   // 차트
   setTimeout(()=>{
-    // TOP5 부품 불량률
+    // TOP5 부품 불량률 (검사 이력 + 불량 있는 부품만)
     const top5 = DB.parts.map(p=>{
       const hist = DB.inspections[p.partNo]||[];
       const totI = hist.reduce((a,h)=>a+h.inspQty,0);
       const totD = hist.reduce((a,h)=>a+h.defQty,0);
-      return { label:p.partNo+'\n'+p.partName, rate: totI?(totD/totI*100):0 };
-    }).sort((a,b)=>b.rate-a.rate).slice(0,5);
+      return { label:p.partNo+'\n'+p.partName, rate: totI?(totD/totI*100):0, totD };
+    }).filter(x=>x.totD>0).sort((a,b)=>b.rate-a.rate).slice(0,5);
 
     if(top5Chart){ top5Chart.destroy(); top5Chart=null; }
     const c1 = document.getElementById('chart-top5').getContext('2d');
-    top5Chart = new Chart(c1,{type:'bar',data:{
-      labels: top5.map(x=>x.label),
-      datasets:[{label:'불량률 (%)',data:top5.map(x=>parseFloat(x.rate.toFixed(2))),
-        backgroundColor:top5.map(x=>x.rate>=5?'#dc2626':x.rate>=3?'#f97316':'#22c55e'),borderRadius:6}]
-    },options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
-      scales:{y:{beginAtZero:true,ticks:{callback:v=>v+'%',font:{size:11}}}}}});
+    if(top5.length===0){
+      c1.canvas.parentElement.innerHTML='<div class="empty" style="padding:40px"><i class="fa-solid fa-chart-bar"></i><p>검사 데이터 없음</p></div>';
+    } else {
+      top5Chart = new Chart(c1,{type:'bar',data:{
+        labels: top5.map(x=>x.label),
+        datasets:[{label:'불량률 (%)',data:top5.map(x=>parseFloat(x.rate.toFixed(2))),
+          backgroundColor:top5.map(x=>x.rate>=5?'#dc2626':x.rate>=3?'#f97316':'#22c55e'),borderRadius:6}]
+      },options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+        scales:{y:{beginAtZero:true,ticks:{callback:v=>v+'%',font:{size:11}}}}}});
+    }
 
     // 불량 유형 분포
     const allTypes = Object.values(DB.inspections).flat().flatMap(h=>h.types);

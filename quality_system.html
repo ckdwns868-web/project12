@@ -626,7 +626,11 @@ tbody tr:hover td{background:#f8fafc}
       </div>
       <div class="grid2 mb20" id="hist-part-cards"></div>
       <div id="hist-detail" style="display:none">
-        <div class="section-title" id="hist-detail-title">부품 상세 이력</div>
+        <div class="flex-between mb16">
+          <button class="btn btn-outline btn-sm" onclick="backToHistoryList()"><i class="fa-solid fa-arrow-left"></i> 목록으로</button>
+          <div class="section-title" id="hist-detail-title" style="margin:0">부품 상세 이력</div>
+          <div style="width:80px"></div>
+        </div>
         <div class="grid2 mb20">
           <div class="card"><div class="card-header"><div class="card-title"><i class="fa-solid fa-chart-line"></i> 차수별 불량률 추이</div></div><div class="chart-wrap"><canvas id="chart-rate-trend"></canvas></div></div>
           <div class="card"><div class="card-header"><div class="card-title"><i class="fa-solid fa-chart-bar"></i> 불량 유형별 빈도</div></div><div class="chart-wrap"><canvas id="chart-defect-type"></canvas></div></div>
@@ -1375,10 +1379,18 @@ function renderHistoryCards(parts){
   }).join('');
 }
 
+function backToHistoryList(){
+  document.getElementById('hist-part-cards').style.display='';
+  document.getElementById('hist-detail').style.display='none';
+  document.getElementById('hist-search').closest('.card').style.display='';
+}
+
 function loadHistoryDetail(pn){
   const part=DB.parts.find(p=>p.partNo===pn);
   const history=DB.inspections[pn]||[];
   if(!history.length){showToast('검사 이력이 없습니다','info');return}
+  document.getElementById('hist-part-cards').style.display='none';
+  document.getElementById('hist-search').closest('.card').style.display='none';
   document.getElementById('hist-detail').style.display='block';
   document.getElementById('hist-detail-title').innerHTML=`<span class="part-no">${pn}</span> ${part?part.partName:''} 상세 이력`;
   const reversed=[...history].reverse();

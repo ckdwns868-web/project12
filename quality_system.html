@@ -906,19 +906,26 @@ async function seedIfEmpty(){
   }
 }
 
+async function fetchAllPages(query){
+  const PAGE = 1000;
+  let all = [], from = 0;
+  while(true){
+    const { data, error } = await query.range(from, from + PAGE - 1);
+    if(error) throw new Error(error.message);
+    if(data && data.length) all = all.concat(data);
+    if(!data || data.length < PAGE) break;
+    from += PAGE;
+  }
+  return all;
+}
+
 async function loadAllData(){
-  const [
-    { data: parts,   error: e1 },
-    { data: dtCodes, error: e2 },
-    { data: insps,   error: e3 },
-    { data: defects, error: e4 },
-  ] = await Promise.all([
-    sb.from('parts').select('*').order('part_no'),
-    sb.from('defect_type_codes').select('*').eq('is_active',true).order('code'),
-    sb.from('inspections').select('*, parts(part_no)').order('incoming_date',{ascending:false}),
-    sb.from('defect_details').select('*'),
+  const [parts, dtCodes, insps, defects] = await Promise.all([
+    fetchAllPages(sb.from('parts').select('*').order('part_no')),
+    fetchAllPages(sb.from('defect_type_codes').select('*').eq('is_active',true).order('code')),
+    fetchAllPages(sb.from('inspections').select('*, parts(part_no)').order('incoming_date',{ascending:false})),
+    fetchAllPages(sb.from('defect_details').select('*')),
   ]);
-  if(e1||e2||e3||e4) throw new Error((e1||e2||e3||e4).message);
 
   // 부품 캐시 (camelCase 정규화)
   DB.parts = (parts||[]).map(p => ({

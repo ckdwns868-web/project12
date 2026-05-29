@@ -489,7 +489,7 @@ tbody tr:hover td{background:#f8fafc}
       <div class="grid2">
         <div class="card">
           <div class="card-header"><div class="card-title"><i class="fa-solid fa-list-check"></i> 최근 입고 검사</div><button class="btn btn-outline btn-sm" onclick="navigate('inspection')">검사 등록 →</button></div>
-          <div class="table-wrap"><table><thead><tr><th>부품번호</th><th>부품명</th><th>입고일</th><th>결과</th><th>불량률</th></tr></thead><tbody id="dash-recent-table"><tr><td colspan="5" class="text-muted text-sm" style="text-align:center;padding:20px">로딩 중...</td></tr></tbody></table></div>
+          <div class="table-wrap"><table><thead><tr><th>품목코드</th><th>품목명 및 규격</th><th>입고일</th><th>결과</th><th>불량률</th></tr></thead><tbody id="dash-recent-table"><tr><td colspan="5" class="text-muted text-sm" style="text-align:center;padding:20px">로딩 중...</td></tr></tbody></table></div>
         </div>
         <div class="card">
           <div class="card-header"><div class="card-title"><i class="fa-solid fa-circle-radiation text-red"></i> 경고 등급 부품</div></div>
@@ -557,8 +557,8 @@ tbody tr:hover td{background:#f8fafc}
         <!-- History panel -->
         <div id="history-panel-wrap">
           <div class="history-panel" id="hp-empty">
-            <div class="hp-header" style="background:linear-gradient(135deg,#334155,#475569)"><h3><i class="fa-solid fa-circle-info"></i> 불량 이력 패널</h3><div class="hp-sub">부품번호를 입력하면 자동으로 이력이 표시됩니다</div></div>
-            <div class="empty" style="padding:40px 20px"><i class="fa-solid fa-magnifying-glass"></i><p>부품번호를 입력하여<br>불량 이력을 확인하세요</p></div>
+            <div class="hp-header" style="background:linear-gradient(135deg,#334155,#475569)"><h3><i class="fa-solid fa-circle-info"></i> 불량 이력 패널</h3><div class="hp-sub">품목코드를 입력하면 자동으로 이력이 표시됩니다</div></div>
+            <div class="empty" style="padding:40px 20px"><i class="fa-solid fa-magnifying-glass"></i><p>품목코드를 입력하여<br>불량 이력을 확인하세요</p></div>
           </div>
           <div class="history-panel" id="hp-result" style="display:none">
             <div class="hp-header" id="hp-result-header"><h3 id="hp-title"></h3><div class="hp-sub" id="hp-subtitle"></div></div>
@@ -597,7 +597,7 @@ tbody tr:hover td{background:#f8fafc}
     <div class="page" id="page-history">
       <div class="card mb16">
         <div class="flex gap12 flex-wrap">
-          <div class="input-icon" style="flex:1;min-width:200px"><i class="fa-solid fa-magnifying-glass"></i><input class="form-input" id="hist-search" placeholder="부품번호 또는 부품명으로 검색..." oninput="filterHistory(this.value)"></div>
+          <div class="input-icon" style="flex:1;min-width:200px"><i class="fa-solid fa-magnifying-glass"></i><input class="form-input" id="hist-search" placeholder="품목코드 또는 품목명으로 검색..." oninput="filterHistory(this.value)"></div>
           <select class="form-select" style="width:140px" id="hist-supplier" onchange="filterHistory(document.getElementById('hist-search').value)"><option value="">전체 공급사</option></select>
         </div>
       </div>
@@ -654,7 +654,7 @@ tbody tr:hover td{background:#f8fafc}
             <button class="btn btn-primary btn-sm" onclick="showAddPartModal()"><i class="fa-solid fa-plus"></i> 부품 추가</button>
           </div>
         </div>
-        <div class="card"><div class="table-wrap"><table><thead><tr><th>부품번호</th><th>부품명</th><th>공급사</th><th>분류</th><th>등급</th><th>최근 입고</th><th>관리</th></tr></thead><tbody id="admin-parts-table"></tbody></table></div></div>
+        <div class="card"><div class="table-wrap"><table><thead><tr><th>품목코드</th><th>품목명 및 규격</th><th>공급사</th><th>분류</th><th>등급</th><th>최근 입고</th><th>관리</th></tr></thead><tbody id="admin-parts-table"></tbody></table></div></div>
       </div>
       <div id="tab-defect-codes" style="display:none">
         <div class="card"><div class="table-wrap"><table><thead><tr><th>코드</th><th>불량 유형명</th><th>분류</th><th>사용 횟수</th><th>상태</th></tr></thead><tbody id="admin-codes-table"></tbody></table></div></div>
@@ -739,8 +739,8 @@ tbody tr:hover td{background:#f8fafc}
 <div class="overlay" id="overlay-add-part">
   <div class="modal">
     <div class="modal-hdr"><div class="modal-title">부품 추가</div><button class="modal-close" onclick="closeModal('overlay-add-part')"><i class="fa-solid fa-xmark"></i></button></div>
-    <div class="form-group"><label class="form-label">부품번호 *</label><input class="form-input" id="ap-partno" placeholder="P-XXXXX"></div>
-    <div class="form-group"><label class="form-label">부품명 *</label><input class="form-input" id="ap-partname"></div>
+    <div class="form-group"><label class="form-label">품목코드 *</label><input class="form-input" id="ap-partno" placeholder="P-XXXXX"></div>
+    <div class="form-group"><label class="form-label">품목명 및 규격 *</label><input class="form-input" id="ap-partname"></div>
     <div class="form-group"><label class="form-label">공급사 *</label><input class="form-input" id="ap-supplier"></div>
     <div class="form-group"><label class="form-label">분류</label><select class="form-select" id="ap-category"><option>구조부품</option><option>체결부품</option><option>밀봉부품</option><option>전장부품</option><option>회전부품</option><option>외장부품</option><option>기타</option></select></div>
     <div class="flex gap8" style="margin-top:16px">
@@ -1085,7 +1085,7 @@ function clearPart(){
 
 function lookupPart(partNo){
   const pn=(partNo||'').trim().toUpperCase();
-  if(!pn){showToast('부품번호를 입력하세요','warning');return}
+  if(!pn){showToast('품목코드를 입력하세요','warning');return}
   document.getElementById('insp-partno').value=pn;
   const part=DB.parts.find(p=>p.partNo===pn);
   currentPartNo=pn;
@@ -1176,7 +1176,7 @@ function toggleDefectChip(el,name){
 }
 
 async function submitInspection(){
-  if(!currentPartNo){showToast('부품번호를 입력하세요','warning');return}
+  if(!currentPartNo){showToast('품목코드를 입력하세요','warning');return}
   if(!selectedResult){showToast('검사 결과를 선택하세요','warning');return}
   const part=DB.parts.find(p=>p.partNo===currentPartNo);
   if(!part){showToast('등록되지 않은 부품입니다. 먼저 부품을 등록하세요','warning');return}
@@ -1317,7 +1317,7 @@ function generateReport(){
       </div>
     </div>
     <div class="rp-section"><h3>2. 부품별 불량 현황</h3>
-      <table style="font-size:12px"><thead><tr><th>부품번호</th><th>부품명</th><th>공급사</th><th>검사수</th><th>불량수</th><th>불량률</th><th>등급</th></tr></thead>
+      <table style="font-size:12px"><thead><tr><th>품목코드</th><th>품목명 및 규격</th><th>공급사</th><th>검사수</th><th>불량수</th><th>불량률</th><th>등급</th></tr></thead>
       <tbody>${DB.parts.map(p=>{
         const hist=(DB.inspections[p.partNo]||[]).filter(h=>h.date>=start&&h.date<=end);
         const ti=hist.reduce((a,h)=>a+h.inspQty,0);
@@ -1751,7 +1751,7 @@ async function handleXlFile(file){
       const idx = headers.findIndex(h => words.some(w => String(h).toLowerCase().includes(w.toLowerCase())));
       if(idx >= 0) el.value = idx;
     };
-    autoSel('xl-col-partno', '품목코드','부품번호','품번','코드');
+    autoSel('xl-col-partno', '품목코드','품목코드','품번','코드');
     autoSel('xl-col-result', '판정','결과','PASS','FAIL','합격','불합격');
     autoSel('xl-col-notes',  '부적합','비고','메모','내용','사유');
     autoSel('xl-col-lot',    '차수','LOT','lot','로트');

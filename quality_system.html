@@ -856,25 +856,31 @@ async function startApp(){
 }
 
 
-async function fetchAllPages(query){
+async function fetchAllParallel(table, selectStr, opts={}){
   const PAGE = 1000;
-  let all = [], from = 0;
-  while(true){
-    const { data, error } = await query.range(from, from + PAGE - 1);
-    if(error) throw new Error(error.message);
-    if(data && data.length) all = all.concat(data);
-    if(!data || data.length < PAGE) break;
-    from += PAGE;
-  }
-  return all;
+  // 전체 건수 파악
+  let countQuery = sb.from(table).select('*', {count:'exact', head:true});
+  if(opts.eq) countQuery = countQuery.eq(opts.eq[0], opts.eq[1]);
+  const { count } = await countQuery;
+  if(!count) return [];
+  // 전체 페이지를 병렬 요청
+  const pages = Math.ceil(count / PAGE);
+  const promises = Array.from({length: pages}, (_, i) => {
+    let q = sb.from(table).select(selectStr);
+    if(opts.eq)    q = q.eq(opts.eq[0], opts.eq[1]);
+    if(opts.order) q = q.order(opts.order, {ascending: opts.asc ?? true});
+    return q.range(i*PAGE, (i+1)*PAGE-1);
+  });
+  const results = await Promise.all(promises);
+  return results.flatMap(r => r.data || []);
 }
 
 async function loadAllData(){
   const [parts, dtCodes, insps, defects] = await Promise.all([
-    fetchAllPages(sb.from('parts').select('*').order('part_no')),
-    fetchAllPages(sb.from('defect_type_codes').select('*').eq('is_active',true).order('code')),
-    fetchAllPages(sb.from('inspections').select('*, parts(part_no)').order('incoming_date',{ascending:false})),
-    fetchAllPages(sb.from('defect_details').select('*')),
+    fetchAllParallel('parts', 'id,part_no,part_name,supplier,category,grade,last_incoming', {order:'part_no', asc:true}),
+    fetchAllParallel('defect_type_codes', '*', {eq:['is_active',true], order:'code', asc:true}),
+    fetchAllParallel('inspections', 'id,part_id,lot_no,incoming_date,incoming_qty,inspect_qty,defect_qty,defect_rate,result,inspector,notes,action,images,parts(part_no)', {order:'incoming_date', asc:false}),
+    fetchAllParallel('defect_details', '*'),
   ]);
 
   // 부품 캐시 (camelCase 정규화)
@@ -1053,7 +1059,7 @@ function clearPart(){
   renderDefectPhotos();
 }
 
-let dropdownIdx = -1;
+let dropdownIdx = -1, searchTimer = null;
 
 function normalizeSearch(s){
   return s.toLowerCase().replace(/[^a-z0-9가-힣]/g,' ').replace(/\s+/g,' ').trim();
@@ -1065,9 +1071,11 @@ function partMatches(p, words){
 }
 
 function onPartSearch(val, forceShow=false){
+  clearTimeout(searchTimer);
   const q = val.trim();
   const dd = document.getElementById('part-dropdown');
   if(!q){ dd.style.display='none'; return; }
+  searchTimer = setTimeout(()=>{
   const words = normalizeSearch(q).split(' ').filter(Boolean);
   const matches = DB.parts.filter(p => partMatches(p, words)).slice(0, 100);
   if(!matches.length){
@@ -1083,6 +1091,7 @@ function onPartSearch(val, forceShow=false){
   }
   dd.style.display = '';
   dropdownIdx = -1;
+  }, forceShow ? 0 : 200);
 }
 
 function onPartKeydown(e){

@@ -552,6 +552,14 @@ tbody tr:hover td{background:#f8fafc}
               <div class="card-title mb8"><i class="fa-solid fa-bug"></i> 불량 유형 선택 (다중)</div>
               <div class="chip-wrap" id="defect-chips"></div>
               <div class="form-group" style="margin-top:14px"><label class="form-label">불량 수량</label><input class="form-input" type="number" id="inf-defqty" placeholder="0"></div>
+              <div class="form-group">
+                <label class="form-label">불량 내용 선택 <span class="text-muted text-xs">(다중 선택 가능)</span></label>
+                <div class="flex gap8 flex-wrap" id="defect-quick-chips">
+                  <button type="button" class="chip" id="qc-외관" onclick="toggleQuickChip('외관')">외관</button>
+                  <button type="button" class="chip" id="qc-치수" onclick="toggleQuickChip('치수')">치수</button>
+                  <button type="button" class="chip" id="qc-기능" onclick="toggleQuickChip('기능')">기능</button>
+                </div>
+              </div>
               <div class="form-group"><label class="form-label">불량 상세 내용</label><textarea class="form-textarea" id="inf-notes" placeholder="불량 발생 내용, 위치, 추정 원인 등 상세 기술..."></textarea></div>
               <div class="form-group"><label class="form-label">조치 내용</label>
                 <select class="form-select" id="inf-action"><option value="">조치 선택</option><option>선별 후 사용</option><option>전량 반품</option><option>폐기</option></select>
@@ -601,8 +609,6 @@ tbody tr:hover td{background:#f8fafc}
               <div class="hp-section-label"><i class="fa-solid fa-list-check"></i> 표준 검사 체크리스트</div>
               <div class="checklist-item"><input type="checkbox" id="sc1"><label for="sc1">외관 전반 검사 (스크래치, 변형, 오염)</label></div>
               <div class="checklist-item"><input type="checkbox" id="sc2"><label for="sc2">주요 치수 측정 (도면 대비)</label></div>
-              <div class="checklist-item"><input type="checkbox" id="sc3"><label for="sc3">수량 확인</label></div>
-              <div class="checklist-item"><input type="checkbox" id="sc4"><label for="sc4">포장 상태 확인</label></div>
               <div class="checklist-item"><input type="checkbox" id="sc5"><label for="sc5">로트 라벨 및 성적서 확인</label></div>
             </div>
           </div>
@@ -1231,11 +1237,30 @@ document.addEventListener('paste', e => {
   }
 });
 
+let selectedQuickChips = [];
+
+function toggleQuickChip(name){
+  const el = document.getElementById('qc-'+name);
+  if(selectedQuickChips.includes(name)){
+    selectedQuickChips = selectedQuickChips.filter(c=>c!==name);
+    el.classList.remove('selected');
+  } else {
+    selectedQuickChips.push(name);
+    el.classList.add('selected');
+  }
+}
+
+function resetQuickChips(){
+  selectedQuickChips = [];
+  ['외관','치수','기능'].forEach(n => document.getElementById('qc-'+n)?.classList.remove('selected'));
+}
+
 function selectResult(r){
   selectedResult=r;
   ['btn-pass','btn-fail'].forEach(id=>document.getElementById(id).className='action-btn');
   document.getElementById('btn-'+r).className='action-btn selected-'+r;
   document.getElementById('fail-section').style.display=(r==='fail')?'block':'none';
+  if(r!=='fail') resetQuickChips();
 }
 
 function buildDefectChips(cid){
@@ -1269,14 +1294,16 @@ async function submitInspection(){
     action:document.getElementById('inf-action').value||'-',
   }).select().single();
   if(error){showToast('저장 실패: '+error.message,'error');btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-floppy-disk"></i> 검사 결과 저장';return}
-  if(selectedResult==='fail'&&selectedDefectTypes.length>0){
-    await sb.from('defect_details').insert(selectedDefectTypes.map(t=>({inspection_id:newInsp.id,defect_type_name:t,defect_count:1})));
+  const allDefectTypes = [...new Set([...selectedDefectTypes, ...selectedQuickChips])];
+  if(selectedResult==='fail'&&allDefectTypes.length>0){
+    await sb.from('defect_details').insert(allDefectTypes.map(t=>({inspection_id:newInsp.id,defect_type_name:t,defect_count:1})));
   }
   await updatePartGrade(part.id, currentPartNo);
   await sb.from('parts').update({last_incoming:document.getElementById('inf-date').value}).eq('id',part.id);
   await loadAllData();
   showToast('검사 결과가 저장되었습니다','success');
   btn.disabled=false; btn.innerHTML='<i class="fa-solid fa-floppy-disk"></i> 검사 결과 저장';
+  resetQuickChips();
   clearPart();
   document.getElementById('insp-partno').value='';
 }
@@ -1294,8 +1321,9 @@ function initHistory(){
 
 function filterHistory(q){
   const supplier=document.getElementById('hist-supplier').value;
+  const words = q ? normalizeSearch(q).split(' ').filter(Boolean) : [];
   const filtered=DB.parts.filter(p=>{
-    const mQ=!q||(p.partNo+p.partName).toLowerCase().includes(q.toLowerCase());
+    const mQ=!words.length||partMatches(p,words);
     const mS=!supplier||p.supplier===supplier;
     return mQ&&mS;
   });
@@ -1502,7 +1530,7 @@ function getCheckItems(topTypes){
   const map={'외관(스크래치)':['표면 전체 스크래치 여부 확인','포장재 손상 확인'],'외관 불량':['외관 육안 검사','표면 오염/변색 확인'],'치수 불량':['주요 치수 도면 대비 측정','공차 범위 초과 여부 확인'],'포장 불량':['포장재 파손 확인','라벨 부착 상태 확인'],'기능 불량':['기능 동작 시험','조립 적합성 확인'],'재질 불량':['재질 인증서 검토','경도 테스트']};
   const items=new Set();
   topTypes.forEach(t=>(map[t]||[]).forEach(i=>items.add(i)));
-  if(!items.size){items.add('외관 전반 검사');items.add('주요 치수 측정');items.add('포장 상태 및 수량 확인');}
+  if(!items.size){items.add('외관 전반 검사');items.add('주요 치수 측정');}
   return [...items].slice(0,5);
 }
 

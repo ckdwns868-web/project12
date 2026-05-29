@@ -518,7 +518,7 @@ tbody tr:hover td{background:#f8fafc}
             <div style="position:relative">
               <div class="input-group">
                 <input class="form-input large" id="insp-partno" placeholder="품목코드 또는 품목명으로 검색" oninput="onPartSearch(this.value)" onkeydown="onPartKeydown(event)" autocomplete="off">
-                <button class="btn btn-primary" onclick="lookupPart(document.getElementById('insp-partno').value)"><i class="fa-solid fa-magnifying-glass"></i> 조회</button>
+                <button class="btn btn-primary" onclick="onPartSearch(document.getElementById('insp-partno').value,true)"><i class="fa-solid fa-magnifying-glass"></i> SEARCH</button>
               </div>
               <div class="search-dropdown" id="part-dropdown" style="display:none"></div>
             </div>
@@ -1041,22 +1041,31 @@ function clearPart(){
 
 let dropdownIdx = -1;
 
-function onPartSearch(val){
-  const q = val.trim().toLowerCase();
+function normalizeSearch(s){
+  return s.toLowerCase().replace(/[^a-z0-9가-힣]/g,' ').replace(/\s+/g,' ').trim();
+}
+
+function partMatches(p, words){
+  const target = normalizeSearch(p.partNo + ' ' + p.partName);
+  return words.every(w => target.includes(w));
+}
+
+function onPartSearch(val, forceShow=false){
+  const q = val.trim();
   const dd = document.getElementById('part-dropdown');
   if(!q){ dd.style.display='none'; return; }
-  const matches = DB.parts.filter(p =>
-    p.partNo.toLowerCase().includes(q) || p.partName.toLowerCase().includes(q)
-  ).slice(0, 50);
+  const words = normalizeSearch(q).split(' ').filter(Boolean);
+  const matches = DB.parts.filter(p => partMatches(p, words)).slice(0, 100);
   if(!matches.length){
     dd.innerHTML = '<div class="search-dropdown-empty">검색 결과 없음</div>';
   } else {
-    dd.innerHTML = matches.map((p,i) =>
-      `<div class="search-dropdown-item" onmousedown="selectDropdownPart('${p.partNo}')" data-idx="${i}">
-        <span class="sd-code">${p.partNo}</span>
-        <span class="sd-name">${p.partName}</span>
-      </div>`
-    ).join('');
+    dd.innerHTML = `<div style="padding:6px 12px;font-size:11px;color:var(--text-3);border-bottom:1px solid var(--border)">${matches.length}건 검색됨</div>` +
+      matches.map((p,i) =>
+        `<div class="search-dropdown-item" onmousedown="selectDropdownPart('${p.partNo}')" data-idx="${i}">
+          <span class="sd-code">${p.partNo}</span>
+          <span class="sd-name">${p.partName}</span>
+        </div>`
+      ).join('');
   }
   dd.style.display = '';
   dropdownIdx = -1;

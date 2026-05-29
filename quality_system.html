@@ -559,10 +559,13 @@ tbody tr:hover td{background:#f8fafc}
               <div class="form-group">
                 <label class="form-label"><i class="fa-solid fa-camera"></i> 불량 사진 <span class="text-muted text-xs">(선택, 최대 5장)</span></label>
                 <div id="defect-photo-preview" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px"></div>
-                <label style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:2px dashed var(--border);border-radius:8px;cursor:pointer;font-size:13px;color:var(--text-2);transition:.2s" onmouseover="this.style.borderColor='#2563eb'" onmouseout="this.style.borderColor='var(--border)'">
-                  <i class="fa-solid fa-plus"></i> 사진 추가
-                  <input type="file" id="defect-photos" accept="image/*" multiple style="display:none" onchange="previewDefectPhotos(this)">
-                </label>
+                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                  <label style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:2px dashed var(--border);border-radius:8px;cursor:pointer;font-size:13px;color:var(--text-2);transition:.2s" onmouseover="this.style.borderColor='#2563eb'" onmouseout="this.style.borderColor='var(--border)'">
+                    <i class="fa-solid fa-folder-open"></i> 파일 선택
+                    <input type="file" id="defect-photos" accept="image/*" multiple style="display:none" onchange="previewDefectPhotos(this)">
+                  </label>
+                  <span class="text-xs text-muted"><i class="fa-solid fa-clipboard"></i> 캡처 후 Ctrl+V로 바로 붙여넣기 가능</span>
+                </div>
               </div>
             </div>
             <button class="btn btn-primary w100" style="margin-top:8px" id="btn-submit-insp" onclick="submitInspection()"><i class="fa-solid fa-floppy-disk"></i> 검사 결과 저장</button>
@@ -1035,8 +1038,8 @@ function clearPart(){
   document.getElementById('hp-none').style.display='none';
   ['btn-pass','btn-fail'].forEach(id=>document.getElementById(id).className='action-btn');
   document.getElementById('fail-section').style.display='none';
-  document.getElementById('defect-photo-preview').innerHTML='';
-  document.getElementById('defect-photos').value='';
+  defectPhotoBlobs = [];
+  renderDefectPhotos();
 }
 
 let dropdownIdx = -1;
@@ -1180,25 +1183,53 @@ function showHistoryPanel(pn, history, part){
     <div class="checklist-item"><input type="checkbox" id="chk${i}"><label for="chk${i}">${item}</label></div>`).join('');
 }
 
-function previewDefectPhotos(input){
+// 파일 + 클립보드 이미지 통합 관리
+let defectPhotoBlobs = [];
+
+function renderDefectPhotos(){
   const preview = document.getElementById('defect-photo-preview');
-  const files = Array.from(input.files).slice(0, 5);
-  preview.innerHTML = files.map((f, i) => {
-    const url = URL.createObjectURL(f);
+  preview.innerHTML = defectPhotoBlobs.map((b, i) => {
+    const url = URL.createObjectURL(b);
     return `<div style="position:relative">
       <img src="${url}" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid var(--border);cursor:zoom-in" onclick="openImgFull('${url}')">
       <button type="button" onclick="removeDefectPhoto(${i})" style="position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;background:#dc2626;color:#fff;border:none;cursor:pointer;font-size:10px;display:flex;align-items:center;justify-content:center;padding:0">×</button>
     </div>`;
   }).join('');
+  if(defectPhotoBlobs.length > 0){
+    preview.innerHTML += `<div style="font-size:11px;color:var(--text-3);align-self:center">${defectPhotoBlobs.length}장</div>`;
+  }
+}
+
+function previewDefectPhotos(input){
+  const files = Array.from(input.files);
+  files.forEach(f => {
+    if(defectPhotoBlobs.length < 5) defectPhotoBlobs.push(f);
+  });
+  input.value = '';
+  renderDefectPhotos();
 }
 
 function removeDefectPhoto(idx){
-  const input = document.getElementById('defect-photos');
-  const dt = new DataTransfer();
-  Array.from(input.files).forEach((f, i) => { if(i !== idx) dt.items.add(f); });
-  input.files = dt.files;
-  previewDefectPhotos(input);
+  defectPhotoBlobs.splice(idx, 1);
+  renderDefectPhotos();
 }
+
+// 클립보드 붙여넣기 (Ctrl+V)
+document.addEventListener('paste', e => {
+  if(document.getElementById('fail-section').style.display === 'none') return;
+  const items = Array.from(e.clipboardData?.items || []);
+  const imgItems = items.filter(it => it.type.startsWith('image/'));
+  if(!imgItems.length) return;
+  imgItems.forEach(it => {
+    if(defectPhotoBlobs.length >= 5) return;
+    const blob = it.getAsFile();
+    if(blob) defectPhotoBlobs.push(blob);
+  });
+  if(imgItems.length > 0){
+    renderDefectPhotos();
+    showToast(`사진 ${imgItems.length}장이 붙여넣기 됐습니다`, 'success');
+  }
+});
 
 function selectResult(r){
   selectedResult=r;

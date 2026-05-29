@@ -898,6 +898,7 @@ async function loadAllData(){
       defQty: insp.defect_qty, rate: parseFloat(insp.defect_rate)||0,
       result: insp.result, types, action: insp.action||'-',
       inspector: insp.inspector||'', notes: insp.notes||'',
+      images: insp.images||[],
     });
   });
 }
@@ -1206,6 +1207,22 @@ function renderDefectPhotos(){
   }
 }
 
+async function compressImage(blob, maxW=1024, quality=0.75){
+  return new Promise(resolve=>{
+    const img = new Image();
+    const url = URL.createObjectURL(blob);
+    img.onload = ()=>{
+      const ratio = Math.min(maxW/img.width, 1);
+      const c = document.createElement('canvas');
+      c.width = img.width*ratio; c.height = img.height*ratio;
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      resolve(c.toDataURL('image/jpeg', quality));
+    };
+    img.src = url;
+  });
+}
+
 function previewDefectPhotos(input){
   const files = Array.from(input.files);
   files.forEach(f => {
@@ -1284,6 +1301,12 @@ async function submitInspection(){
   const inspQty=parseInt(document.getElementById('inf-inspqty').value)||0;
   const defQty=selectedResult==='fail'?(parseInt(document.getElementById('inf-defqty').value)||0):0;
   const rate=inspQty>0?(defQty/inspQty*100):0;
+  // 사진 압축 → base64
+  let imageData = [];
+  if(selectedResult==='fail' && defectPhotoBlobs.length>0){
+    btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> 사진 처리 중...';
+    imageData = await Promise.all(defectPhotoBlobs.map(b=>compressImage(b)));
+  }
   const {data:newInsp,error}=await sb.from('inspections').insert({
     part_id:part.id, lot_no:document.getElementById('inf-lot').value,
     incoming_date:document.getElementById('inf-date').value,
@@ -1292,6 +1315,7 @@ async function submitInspection(){
     defect_rate:parseFloat(rate.toFixed(2)), result:selectedResult,
     inspector: '-', notes:document.getElementById('inf-notes').value,
     action:document.getElementById('inf-action').value||'-',
+    images: imageData,
   }).select().single();
   if(error){showToast('저장 실패: '+error.message,'error');btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-floppy-disk"></i> 검사 결과 저장';return}
   const allDefectTypes = [...new Set([...selectedDefectTypes, ...selectedQuickChips])];
@@ -1422,6 +1446,8 @@ function generateReport(){
       <table style="font-size:12px"><thead><tr><th>품목코드</th><th>품목명 및 규격</th><th>공급사</th><th>검사수</th><th>불량수</th><th>불량률</th><th>등급</th></tr></thead>
       <tbody>${DB.parts.map(p=>{
         const hist=(DB.inspections[p.partNo]||[]).filter(h=>h.date>=start&&h.date<=end);
+        const failHist=hist.filter(h=>h.result==='fail');
+        if(!failHist.length) return '';
         const ti=hist.reduce((a,h)=>a+h.inspQty,0);
         const td=hist.reduce((a,h)=>a+h.defQty,0);
         const r=ti?(td/ti*100).toFixed(1):'0.0';
@@ -1507,16 +1533,34 @@ function openHistoryModal(pn){
   const part=DB.parts.find(p=>p.partNo===pn);
   const history=DB.inspections[pn]||[];
   document.getElementById('modal-hist-title').textContent=(part?part.partName+' ':'')+pn+' — 전체 이력';
-  document.getElementById('modal-hist-body').innerHTML=`<div class="table-wrap"><table>
-    <thead><tr><th>차수</th><th>입고일</th><th>검사수</th><th>불량수</th><th>불량률</th><th>불량 유형</th><th>조치</th></tr></thead>
-    <tbody>${history.map(h=>`<tr>
-      <td><span class="lot-badge">${h.lot}</span></td><td class="text-sm">${h.date}</td>
-      <td>${h.inspQty}</td><td>${h.defQty}</td>
-      <td><span class="rate-chip ${rateClass(h.rate)}">${h.rate.toFixed(1)}%</span></td>
-      <td>${h.types.map(t=>`<span class="tl-tag red" style="margin-right:3px">${t}</span>`).join('')||'-'}</td>
-      <td><span class="badge badge-gray text-xs">${h.action}</span></td>
-    </tr>`).join('')}</tbody>
-  </table></div>`;
+  document.getElementById('modal-hist-body').innerHTML = history.length===0
+    ? '<div class="empty" style="padding:32px"><i class="fa-solid fa-inbox"></i><p>이력 없음</p></div>'
+    : history.map(h=>{
+        const isFail = h.result==='fail';
+        const typeTags = h.types.length
+          ? h.types.map(t=>`<span class="tl-tag red" style="margin-right:3px">${t}</span>`).join('')
+          : '';
+        const photos = (h.images||[]).length
+          ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+              ${(h.images||[]).map(src=>`<img src="${src}" style="height:72px;width:auto;border-radius:6px;border:1px solid var(--border);cursor:zoom-in;object-fit:cover" onclick="openImgFull('${src}')">`).join('')}
+            </div>` : '';
+        return `<div style="border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px;background:${isFail?'#fef9f9':'#f9fffe'}">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap">
+            <span class="lot-badge">${h.lot||'-'}</span>
+            <span class="text-sm text-muted">${h.date||'-'}</span>
+            <span class="badge badge-${h.result}">${h.result==='pass'?'합격':'불합격'}</span>
+            <span class="rate-chip ${rateClass(h.rate)}" style="margin-left:auto">${h.rate.toFixed(1)}%</span>
+          </div>
+          <div style="font-size:12px;color:var(--text-2);display:flex;gap:16px;flex-wrap:wrap">
+            <span>검사수 <b>${h.inspQty}</b></span>
+            <span>불량수 <b style="color:${isFail?'#dc2626':'inherit'}">${h.defQty}</b></span>
+            <span>조치 <b>${h.action}</b></span>
+          </div>
+          ${typeTags?`<div style="margin-top:8px">${typeTags}</div>`:''}
+          ${h.notes?`<div style="margin-top:6px;font-size:12px;color:#374151;background:#fff;padding:8px;border-radius:6px;border:1px solid #e5e7eb">${h.notes}</div>`:''}
+          ${photos}
+        </div>`;
+      }).join('');
   document.getElementById('overlay-history').classList.add('show');
 }
 

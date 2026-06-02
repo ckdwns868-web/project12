@@ -1353,12 +1353,22 @@ function initHistory(){
   if(sel.options.length<=1){
     [...new Set(DB.parts.map(p=>p.supplier))].forEach(s=>{const o=document.createElement('option');o.textContent=s;sel.appendChild(o)});
   }
-  renderHistoryCards(DB.parts);
+  // 검색 전에는 빈 상태
+  const c=document.getElementById('hist-part-cards');
+  c.innerHTML='<div class="empty" style="grid-column:1/-1;padding:48px 0"><i class="fa-solid fa-magnifying-glass"></i><p>품목코드 또는 품목명으로 검색하세요</p></div>';
+  document.getElementById('hist-detail').style.display='none';
 }
 
 function filterHistory(q){
   const supplier=document.getElementById('hist-supplier').value;
   const words = q ? normalizeSearch(q).split(' ').filter(Boolean) : [];
+  // 검색어 없고 공급사 미선택이면 빈 상태 유지
+  if(!words.length && !supplier){
+    const c=document.getElementById('hist-part-cards');
+    c.innerHTML='<div class="empty" style="grid-column:1/-1;padding:48px 0"><i class="fa-solid fa-magnifying-glass"></i><p>품목코드 또는 품목명으로 검색하세요</p></div>';
+    document.getElementById('hist-detail').style.display='none';
+    return;
+  }
   const filtered=DB.parts.filter(p=>{
     const mQ=!words.length||partMatches(p,words);
     const mS=!supplier||p.supplier===supplier;
